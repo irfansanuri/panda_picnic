@@ -1,36 +1,122 @@
 // ─────────────────────────────────────────────────────────
 //  PANDA BERPICNIC 2026 — Shared Store
-//  • All data lives in PocketBase (collection: picnic_state)
-//  • Each CRUD op writes to PocketBase directly
+//  • All data lives in Firestore (collection: app_state, doc: picnic_state)
+//  • Each CRUD op writes to Firestore directly
 //  • Real-time subscription syncs changes from other devices
 // ─────────────────────────────────────────────────────────
 
-import { pb } from "src/pocketbase.js";
 import { ref } from "vue";
+import {
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { db, isFirebaseConfigured } from "src/firebase.js";
 
-const COLLECTION = "picnic_state";
+const COLLECTION = "app_state";
+const DOC_ID = "picnic_state";
 
-// ── Helpers ────────────────────────────────────────────
+const initialState = {
+  vvip: [
+    { id: 1, name: "Fathur", emoji: "🐼", title: "Ketua Panda", crown: true },
+    {
+      id: 2,
+      name: "Dato' Haikal",
+      emoji: "🎖️",
+      title: "YB Taman Picnic",
+      crown: false,
+    },
+  ],
+  tetamu: [
+    { id: 1, name: "Luqman", emoji: "🧑" },
+    { id: 2, name: "Aisyah", emoji: "👩" },
+  ],
+  categories: [
+    {
+      id: "basic",
+      label: "Keperluan Asas",
+      icon: "🏕️",
+      items: [
+        { id: 1, name: "Tempat BBQ", person: "Luqman" },
+        { id: 2, name: "Arang", person: "Luqman" },
+        { id: 3, name: "Penyepit", person: "Luqman" },
+        { id: 4, name: "Kipas Sate", person: "Luqman" },
+        { id: 5, name: "Tikar", person: "Dato' Haikal" },
+        { id: 6, name: "Pinggan", person: null },
+        { id: 7, name: "Cawan", person: null },
+        { id: 8, name: "Plastik Sampah", person: "Fathur" },
+        { id: 9, name: "Bekas Aluminium Foil", person: null },
+        { id: 10, name: "Bekas Air", person: "Fathur" },
+        { id: 11, name: "Kerusi healing", person: null },
+      ],
+    },
+    {
+      id: "food",
+      label: "Makanan",
+      icon: "🍖",
+      items: [
+        { id: 101, name: "Ayam Perap", person: "Aisyah" },
+        { id: 102, name: "Sosej", person: null },
+        { id: 103, name: "Sayur (Salad)", person: null },
+        { id: 104, name: "Buah (Tembikai) 🍉", person: "Dato' Haikal" },
+        { id: 105, name: "Dessert", person: null },
+        { id: 106, name: "Minuman", person: "Fathur" },
+        { id: 107, name: "Sos Cili", person: null },
+        { id: 108, name: "Sos BBQ", person: null },
+        { id: 109, name: "Jajan", person: null },
+        { id: 110, name: "Ais", person: "Aisyah" },
+        { id: 111, name: "Ikan Keli Pistachio 🐟", person: null },
+        { id: 112, name: "Laksa Matcha 🍵", person: null },
+        { id: 113, name: "Nasi Lemak Matcha 🍃", person: "Dato' Haikal" },
+        { id: 114, name: "Ayam Gepuk Pistachio 🥜", person: null },
+      ],
+    },
+    {
+      id: "games",
+      label: "Permainan",
+      icon: "🎲",
+      items: [
+        { id: 201, name: "Uno (No Mercy) 🃏", person: null },
+        { id: 202, name: "Saidina 🎰", person: null },
+        { id: 203, name: "Monopoly 🏦", person: null },
+        { id: 204, name: "Baling Selipar 👡", person: null },
+        { id: 205, name: "Mancing + Mata Kail 🎣", person: null },
+        { id: 206, name: "Hiking 🥾", person: null },
+        { id: 207, name: "Chess ♟️", person: null },
+      ],
+    },
+  ],
+  games: [
+    { id: 1, name: "Uno No Mercy" },
+    { id: 2, name: "Monopoly" },
+    { id: 3, name: "Saidina" },
+    { id: 4, name: "Baling Selipar" },
+    { id: 5, name: "Mancing" },
+    { id: 6, name: "Hiking" },
+    { id: 7, name: "Chess" },
+    { id: 8, name: "Berenang" },
+  ],
+};
+
 function toPlain(v) {
   return JSON.parse(JSON.stringify(v));
 }
 
-// ── State (empty until PocketBase loads) ──────────────
 export const vvip = ref([]);
 export const tetamu = ref([]);
 export const categories = ref([]);
 export const games = ref([]);
 
-let recordId = null;
 let unsubscriber = null;
+let stateRef = null;
 
-// ── Push partial update to PocketBase ─────────────────
 async function push(fields) {
-  if (!recordId) return;
+  if (!stateRef) return;
   try {
-    await pb.collection(COLLECTION).update(recordId, fields);
+    await updateDoc(stateRef, fields);
   } catch (e) {
-    console.error("PocketBase write error:", e.message);
+    console.error("Firestore write error:", e.message);
   }
 }
 
@@ -103,49 +189,52 @@ export function allPeople() {
   ].filter(Boolean);
 }
 
-// ── Init: fetch from PocketBase + subscribe ───────────
-async function initPB() {
-  try {
-    const list = await pb.collection(COLLECTION).getList(1, 1);
-    if (!list.items.length) {
-      console.warn("🐼 No data in PocketBase — run seed.mjs first");
-      return;
-    }
-    const rec = list.items[0];
-    recordId = rec.id;
-
-    if (rec.vvip?.length) vvip.value = rec.vvip;
-    if (rec.tetamu?.length) tetamu.value = rec.tetamu;
-    if (rec.categories?.length) categories.value = rec.categories;
-    if (rec.games?.length) games.value = rec.games;
-
-    // Real-time updates from other devices
-    // Unsubscribe previous subscription if it exists
-    if (unsubscriber) {
-      await unsubscriber();
-    }
-
-    unsubscriber = await pb.collection(COLLECTION).subscribe(recordId, (e) => {
-      if (e.action !== "update") return;
-      const d = e.record;
-      if (d.vvip) vvip.value = d.vvip;
-      if (d.tetamu) tetamu.value = d.tetamu;
-      if (d.categories) categories.value = d.categories;
-      if (d.games) games.value = d.games;
-    });
-
-    console.log("🐼 PocketBase sync live! Record:", recordId);
-  } catch (e) {
-    console.warn("🐼 PocketBase unavailable:", e.message);
+// ── Init: fetch from Firestore + subscribe ────────────
+async function initFirestore() {
+  if (!db || !isFirebaseConfigured) {
+    console.warn("🐼 Firebase is not configured. Add VITE_FIREBASE_* variables.");
+    vvip.value = initialState.vvip;
+    tetamu.value = initialState.tetamu;
+    categories.value = initialState.categories;
+    games.value = initialState.games;
+    return;
   }
+
+  stateRef = doc(db, COLLECTION, DOC_ID);
+
+  if (unsubscriber) {
+    unsubscriber();
+    unsubscriber = null;
+  }
+
+  unsubscriber = onSnapshot(
+    stateRef,
+    async (snapshot) => {
+      if (!snapshot.exists()) {
+        await setDoc(stateRef, initialState);
+        return;
+      }
+
+      const data = snapshot.data();
+      if (Array.isArray(data.vvip)) vvip.value = data.vvip;
+      if (Array.isArray(data.tetamu)) tetamu.value = data.tetamu;
+      if (Array.isArray(data.categories)) categories.value = data.categories;
+      if (Array.isArray(data.games)) games.value = data.games;
+    },
+    (e) => {
+      console.warn("🐼 Firestore unavailable:", e.message);
+    },
+  );
+
+  console.log("🐼 Firestore sync live!");
 }
 
 // ── Cleanup subscription (call from App.vue onBeforeUnmount) ──
 export async function cleanupSubscription() {
   if (unsubscriber) {
-    await unsubscriber();
+    unsubscriber();
     unsubscriber = null;
   }
 }
 
-initPB();
+initFirestore();
