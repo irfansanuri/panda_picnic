@@ -1,0 +1,36 @@
+{
+  "name": "panda-berpicnic",
+  "version": "1.0.0",
+  "description": "PANDA BERPICNIC 2026 - Luxurious Woody Villa Invitation Website",
+  "productName": "Panda Berpicnic",
+  "author": "PANDA",
+  "private": true,
+  "scripts": {
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "lint": "eslint --ext .js,.vue ./src"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.12",
+    "@vueuse/motion": "^2.2.3",
+    "firebase": "^12.14.0",
+    "gsap": "^3.12.5",
+    "pocketbase": "^0.27.0",
+    "quasar": "^2.16.5",
+    "three": "^0.165.0",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^1.10.1",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.23.0",
+    "postcss": "^8.4.38",
+    "sass": "^1.77.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">= 6.13.4"
+  }
+}
