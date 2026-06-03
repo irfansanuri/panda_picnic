@@ -7,6 +7,7 @@
 
 import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "src/firebase.js";
+import { lookupGameMeta } from "src/data/gameDictionary.js";
 import { ref } from "vue";
 
 const COLLECTION = import.meta.env.VITE_FIRESTORE_COLLECTION;
@@ -36,50 +37,17 @@ function stripEmoji(text = "") {
     .trim();
 }
 
-async function generateGameMeta(name = "") {
-  const cleanName = stripEmoji(name);
-  if (!cleanName) {
-    return {
-      name: "",
-      emoji: "",
-      description: "",
-      type: "",
-      typeLabel: "",
-      metaSource: "ai",
-    };
-  }
-
-  const response = await fetch("/api/generate-game-meta", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: cleanName }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`AI metadata request failed (${response.status})`);
-  }
-
-  const data = await response.json();
-  return {
-    name: cleanName,
-    emoji: String(data.emoji || "").trim(),
-    description: String(data.description || "").trim(),
-    type: String(data.type || "").trim(),
-    typeLabel: String(data.typeLabel || "").trim(),
-    metaSource: "ai",
-  };
-}
-
-async function normalizeGameItem(item = {}) {
-  const generated = await generateGameMeta(item.name);
+function normalizeGameItem(item = {}) {
+  const cleanName = stripEmoji(item.name);
+  const meta = lookupGameMeta(cleanName);
   return {
     ...item,
-    name: generated.name,
-    emoji: generated.emoji,
-    description: generated.description,
-    type: generated.type,
-    typeLabel: generated.typeLabel,
-    metaSource: generated.metaSource,
+    name: cleanName,
+    emoji: meta.emoji,
+    description: meta.description,
+    type: meta.type,
+    typeLabel: meta.typeLabel,
+    metaSource: "dict",
   };
 }
 
@@ -94,41 +62,26 @@ function hasSameGameMeta(a = {}, b = {}) {
   );
 }
 
-function hasAiMetadata(item = {}) {
-  return !!(
-    item.metaSource === "ai" &&
-    item.emoji &&
-    item.description &&
-    item.type &&
-    item.typeLabel
-  );
+function hasMetadata(item = {}) {
+  return !!(item.emoji && item.description && item.type && item.typeLabel);
 }
 
-async function normalizeCategories(list = []) {
+function normalizeCategories(list = []) {
   let changed = false;
 
-  const normalized = await Promise.all(
-    list.map(async (cat) => {
-      if (!isGamesCategory(cat)) return cat;
+  const normalized = list.map((cat) => {
+    if (!isGamesCategory(cat)) return cat;
 
-      const items = await Promise.all(
-        (cat.items || []).map(async (item) => {
-          if (hasAiMetadata(item)) {
-            return item;
-          }
+    const items = (cat.items || []).map((item) => {
+      if (hasMetadata(item)) return item;
 
-          const next = await normalizeGameItem(item);
-          if (!hasSameGameMeta(item, next)) changed = true;
-          return next;
-        }),
-      );
+      const next = normalizeGameItem(item);
+      if (!hasSameGameMeta(item, next)) changed = true;
+      return next;
+    });
 
-      return {
-        ...cat,
-        items,
-      };
-    }),
-  );
+    return { ...cat, items };
+  });
 
   return { normalized, changed };
 }
@@ -203,12 +156,7 @@ export async function saveItem(item) {
     (cat.items || []).some((entry) => entry.id === item.id),
   );
   if (isGamesCategory(parentCat)) {
-    try {
-      Object.assign(item, await normalizeGameItem(item));
-    } catch (e) {
-      console.warn("Failed to generate AI metadata for game item:", e.message);
-      return;
-    }
+    Object.assign(item, normalizeGameItem(item));
   }
 
   push({ categories: toPlain(categories.value) });
@@ -279,18 +227,10 @@ async function initFirestore() {
       if (Array.isArray(data.vvip)) vvip.value = data.vvip;
       if (Array.isArray(data.tetamu)) tetamu.value = data.tetamu;
       if (Array.isArray(data.categories)) {
-        try {
-          const { normalized, changed } = await normalizeCategories(
-            data.categories,
-          );
-          categories.value = normalized;
-
-          if (changed) {
-            await updateDoc(stateRef, { categories: toPlain(normalized) });
-          }
-        } catch (err) {
-          console.warn("Failed to backfill AI game metadata:", err.message);
-          categories.value = data.categories;
+        const { normalized, changed } = normalizeCategories(data.categories);
+        categories.value = normalized;
+        if (changed) {
+          await updateDoc(stateRef, { categories: toPlain(normalized) });
         }
       }
       if (Array.isArray(data.games)) games.value = data.games;
