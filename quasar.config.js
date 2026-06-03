@@ -20,6 +20,13 @@ module.exports = configure(function (/* ctx */) {
 
     devServer: {
       open: true,
+      proxy: {
+        "/api": {
+          target: "https://panda-picnic.vercel.app",
+          changeOrigin: true,
+          secure: true,
+        },
+      },
     },
 
     framework: {
