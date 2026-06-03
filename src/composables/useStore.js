@@ -14,90 +14,17 @@ import {
 } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "src/firebase.js";
 
-const COLLECTION = "app_state";
-const DOC_ID = "picnic_state";
+const COLLECTION = import.meta.env.VITE_FIRESTORE_COLLECTION;
+const DOC_ID = import.meta.env.VITE_FIRESTORE_DOC_ID;
 
-const initialState = {
-  vvip: [
-    { id: 1, name: "Fathur", emoji: "🐼", title: "Ketua Panda", crown: true },
-    {
-      id: 2,
-      name: "Dato' Haikal",
-      emoji: "🎖️",
-      title: "YB Taman Picnic",
-      crown: false,
-    },
-  ],
-  tetamu: [
-    { id: 1, name: "Luqman", emoji: "🧑" },
-    { id: 2, name: "Aisyah", emoji: "👩" },
-  ],
-  categories: [
-    {
-      id: "basic",
-      label: "Keperluan Asas",
-      icon: "🏕️",
-      items: [
-        { id: 1, name: "Tempat BBQ", person: "Luqman" },
-        { id: 2, name: "Arang", person: "Luqman" },
-        { id: 3, name: "Penyepit", person: "Luqman" },
-        { id: 4, name: "Kipas Sate", person: "Luqman" },
-        { id: 5, name: "Tikar", person: "Dato' Haikal" },
-        { id: 6, name: "Pinggan", person: null },
-        { id: 7, name: "Cawan", person: null },
-        { id: 8, name: "Plastik Sampah", person: "Fathur" },
-        { id: 9, name: "Bekas Aluminium Foil", person: null },
-        { id: 10, name: "Bekas Air", person: "Fathur" },
-        { id: 11, name: "Kerusi healing", person: null },
-      ],
-    },
-    {
-      id: "food",
-      label: "Makanan",
-      icon: "🍖",
-      items: [
-        { id: 101, name: "Ayam Perap", person: "Aisyah" },
-        { id: 102, name: "Sosej", person: null },
-        { id: 103, name: "Sayur (Salad)", person: null },
-        { id: 104, name: "Buah (Tembikai) 🍉", person: "Dato' Haikal" },
-        { id: 105, name: "Dessert", person: null },
-        { id: 106, name: "Minuman", person: "Fathur" },
-        { id: 107, name: "Sos Cili", person: null },
-        { id: 108, name: "Sos BBQ", person: null },
-        { id: 109, name: "Jajan", person: null },
-        { id: 110, name: "Ais", person: "Aisyah" },
-        { id: 111, name: "Ikan Keli Pistachio 🐟", person: null },
-        { id: 112, name: "Laksa Matcha 🍵", person: null },
-        { id: 113, name: "Nasi Lemak Matcha 🍃", person: "Dato' Haikal" },
-        { id: 114, name: "Ayam Gepuk Pistachio 🥜", person: null },
-      ],
-    },
-    {
-      id: "games",
-      label: "Permainan",
-      icon: "🎲",
-      items: [
-        { id: 201, name: "Uno (No Mercy) 🃏", person: null },
-        { id: 202, name: "Saidina 🎰", person: null },
-        { id: 203, name: "Monopoly 🏦", person: null },
-        { id: 204, name: "Baling Selipar 👡", person: null },
-        { id: 205, name: "Mancing + Mata Kail 🎣", person: null },
-        { id: 206, name: "Hiking 🥾", person: null },
-        { id: 207, name: "Chess ♟️", person: null },
-      ],
-    },
-  ],
-  games: [
-    { id: 1, name: "Uno No Mercy" },
-    { id: 2, name: "Monopoly" },
-    { id: 3, name: "Saidina" },
-    { id: 4, name: "Baling Selipar" },
-    { id: 5, name: "Mancing" },
-    { id: 6, name: "Hiking" },
-    { id: 7, name: "Chess" },
-    { id: 8, name: "Berenang" },
-  ],
-};
+function emptyState() {
+  return {
+    vvip: [],
+    tetamu: [],
+    categories: [],
+    games: [],
+  };
+}
 
 function toPlain(v) {
   return JSON.parse(JSON.stringify(v));
@@ -193,10 +120,21 @@ export function allPeople() {
 async function initFirestore() {
   if (!db || !isFirebaseConfigured) {
     console.warn("🐼 Firebase is not configured. Add VITE_FIREBASE_* variables.");
-    vvip.value = initialState.vvip;
-    tetamu.value = initialState.tetamu;
-    categories.value = initialState.categories;
-    games.value = initialState.games;
+    const state = emptyState();
+    vvip.value = state.vvip;
+    tetamu.value = state.tetamu;
+    categories.value = state.categories;
+    games.value = state.games;
+    return;
+  }
+
+  if (!COLLECTION || !DOC_ID) {
+    console.warn("🐼 Firestore path is not configured. Add VITE_FIRESTORE_COLLECTION and VITE_FIRESTORE_DOC_ID.");
+    const state = emptyState();
+    vvip.value = state.vvip;
+    tetamu.value = state.tetamu;
+    categories.value = state.categories;
+    games.value = state.games;
     return;
   }
 
@@ -211,7 +149,7 @@ async function initFirestore() {
     stateRef,
     async (snapshot) => {
       if (!snapshot.exists()) {
-        await setDoc(stateRef, initialState);
+        await setDoc(stateRef, emptyState());
         return;
       }
 
