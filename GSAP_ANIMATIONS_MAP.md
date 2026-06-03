@@ -477,7 +477,7 @@ At progress 0.38 (≈ 50% of scroll):
 
 ```javascript
 // Games might not be loaded when component mounts
-// PocketBase fetch can be slow
+// Firestore fetch can be slow
 
 watch(
   gamesList,
@@ -488,7 +488,7 @@ watch(
 );
 
 // Means: Animation doesn't start until gamesList updates
-// If PocketBase slow: cards don't appear until data arrives
+// If Firestore slow: cards don't appear until data arrives
 // Good pattern, but could feel laggy on slow connection
 ```
 

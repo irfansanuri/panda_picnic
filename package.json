@@ -8,15 +8,13 @@
   "scripts": {
     "dev": "quasar dev",
     "build": "quasar build",
-    "lint": "eslint --ext .js,.vue ./src",
-    "migrate:pocketbase:firestore": "node --env-file=.env scripts/migrate-pocketbase-to-firestore.mjs"
+    "lint": "eslint --ext .js,.vue ./src"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.12",
     "@vueuse/motion": "^2.2.3",
     "firebase": "^12.14.0",
     "gsap": "^3.12.5",
-    "pocketbase": "^0.27.0",
     "quasar": "^2.16.5",
     "three": "^0.165.0",
     "vue": "^3.4.21",

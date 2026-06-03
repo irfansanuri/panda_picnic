@@ -46,7 +46,7 @@ This comprehensive audit includes 4 documents designed for different audiences a
     - Issues identified
     - Risk assessment
     - Recommendations
-  - Store (PocketBase) analysis
+  - Store (Firestore) analysis
   - Architecture issues
   - Responsive design issues
   - GSAP safety assessment
@@ -59,7 +59,7 @@ This comprehensive audit includes 4 documents designed for different audiences a
 **Key Sections**:
 
 - Section 1: Component Analysis (full deep-dive)
-- Section 2: Store Analysis (PocketBase patterns)
+- Section 2: Store Analysis (Firestore patterns)
 - Section 3: Architecture Issues (code smells)
 - Section 4: Responsive Design (breakpoint issues)
 - Section 5: GSAP Safety Assessment (animation dependencies)
@@ -163,7 +163,7 @@ Missing cleanup:
 
 ---
 
-### Issue 2: PocketBase Subscription Leak
+### Issue 2: Firestore Subscription Leak
 
 **Status**: 🔴 CRITICAL  
 **Fix Time**: 15 minutes  
@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
 ### Week 1: Critical Fixes (Must Do)
 
 - [ ] HeroSection: Add RAF/renderer/listener cleanup
-- [ ] Store: Add PocketBase unsubscribe
+- [ ] Store: Add Firestore unsubscribe
 - [ ] All components: Add ScrollTrigger cleanup
 - [ ] Test memory usage in DevTools
 
@@ -416,7 +416,7 @@ This File (INDEX - Navigation)
 ## 📝 NOTES
 
 - This audit is comprehensive but focused on GSAP and responsiveness
-- Security audit not included (review PocketBase configuration separately)
+- Security audit not included (review Firestore configuration separately)
 - Performance optimization (beyond animations) not included
 - Accessibility audit not included (WCAG compliance should be done separately)
 

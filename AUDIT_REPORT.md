@@ -1,7 +1,7 @@
 # PANDA BERPICNIC 2026 - Comprehensive Audit Report
 
 **Date**: June 3, 2026  
-**Project**: Panda Berpicnic (Vue 3 + Quasar + GSAP + PocketBase)  
+**Project**: Panda Berpicnic (Vue 3 + Quasar + GSAP + Firestore)  
 **Focus**: GSAP animations, responsiveness, architecture quality
 
 ---
@@ -14,7 +14,7 @@ The PANDA BERPICNIC project is a sophisticated, animation-heavy Vue 3 SPA featur
 
 - **10 major component sections** with heavy GSAP/ScrollTrigger orchestration
 - **Three.js particle effects** in hero section (600+ particles)
-- **Real-time data sync** via PocketBase
+- **Real-time data sync** via Firestore
 - **Tropical beach theme** with custom CSS variables
 
 **Critical Finding**: **4 components (HeroSection, CountdownSection, GamesSection, TimelineSection) have HIGH GSAP coupling** - refactoring requires extreme care to avoid animation breakage.
@@ -96,7 +96,7 @@ const COUNT = 600
 - **Props**: None
 - **Emits**: None
 
-#### PocketBase Usage
+#### Firestore Usage
 
 - ❌ None
 
@@ -223,7 +223,7 @@ const diff = TARGET - new Date();
 - **Props**: None
 - **Emits**: None
 
-#### PocketBase Usage
+#### Firestore Usage
 
 - ❌ None
 
@@ -335,7 +335,7 @@ watch(
 );
 
 // This means:
-// • Animations don't init until PocketBase data arrives
+// • Animations don't init until Firestore data arrives
 // • Use nextTick() to ensure DOM updates complete
 // • Only trigger once
 ```
@@ -345,14 +345,14 @@ watch(
 1. ⚠️ **Icon animation triggered by ScrollTrigger.progress()**: Complex timing
 2. ✅ **Stagger randomization**: Proper use of `gsap.utils.random()`
 3. ✅ **Dynamic ref system**: Uses game.id as key
-4. ⚠️ **Watch + nextTick dependency**: Can fail if PocketBase is slow
+4. ⚠️ **Watch + nextTick dependency**: Can fail if Firestore is slow
 
 #### Props/Emits
 
 - **Props**: Implicit - uses store
 - **Emits**: None
 
-#### PocketBase Usage
+#### Firestore Usage
 
 - ✅ Imports: `games, removeGame, saveGame` from store
 - ✅ Direct mutation: `game.editing = false`
@@ -397,7 +397,7 @@ onBeforeUnmount() {
 
 #### ⚠️ ISSUES
 
-1. **Late data initialization**: If PocketBase slow, animations delayed
+1. **Late data initialization**: If Firestore slow, animations delayed
 2. **Icon floating wave**: Infinite repeat with stagger - continuous memory use
 3. **Card explosion**: Random values generate different result each scroll
 
@@ -484,7 +484,7 @@ const events = [
 - **Props**: None
 - **Emits**: None
 
-#### PocketBase Usage
+#### Firestore Usage
 
 - ❌ None
 
@@ -611,7 +611,7 @@ onBeforeUnmount() {
 - **Props**: None
 - **Emits**: None
 
-#### PocketBase Usage
+#### Firestore Usage
 
 - ❌ None
 
@@ -709,7 +709,7 @@ onBeforeUnmount() {
 - `quoteRef` - Quote section
 - `tiltRefs` - Reactive object, keyed by person ID
 
-#### PocketBase Integration
+#### Firestore Integration
 
 - ✅ Imports: `addTetamu, addVvip, removeTetamu, removeVvip, saveTetamu, saveVvip`
 - ✅ Reactive refs: `vvip, tetamu` from store
@@ -789,7 +789,7 @@ onMounted() {
 - Dropdown for person assignment
 - Progress bar (no GSAP, pure CSS)
 
-#### PocketBase Integration
+#### Firestore Integration
 
 - ✅ Full: `addItem, allPeople, categories, deleteItem, saveItem`
 - ✅ Proper store integration
@@ -865,7 +865,7 @@ onMounted() {
 #### Content
 
 - 5 mood cards: Beach, BBQ, Games, Memory, Friendship
-- Static data (no PocketBase)
+- Static data (no Firestore)
 - Pure presentation
 
 #### Responsive Design
@@ -1006,7 +1006,7 @@ onBeforeUnmount() {
 ### Structure
 
 ```javascript
-// Single PocketBase record in "picnic_state" collection
+// Single Firestore record in "picnic_state" collection
 // Four reactive refs:
 • vvip: []          // VIP attendees with titles/crowns
 • tetamu: []        // Regular attendees
@@ -1027,7 +1027,7 @@ onBeforeUnmount() {
 ```javascript
 addVvip(); // Push new with default structure
 removeVvip(id); // Filter by id + push()
-saveVvip(); // Push entire array to PocketBase
+saveVvip(); // Push entire array to Firestore
 ```
 
 #### Tetamu CRUD
@@ -1064,7 +1064,7 @@ allPeople(); // Return [vvip names, tetamu names]
 
 #### 🔴 CRITICAL
 
-1. **Entire array saves**: Every edit re-sends entire array to PocketBase
+1. **Entire array saves**: Every edit re-sends entire array to Firestore
 2. **No error handling**: `try/catch` only logs, no user feedback
 3. **No validation**: User input not validated before save
 4. **UI state in data**: `editing: true` mixed with business data
@@ -1073,16 +1073,16 @@ allPeople(); // Return [vvip names, tetamu names]
 
 1. **No real-time delete sync**: If user A deletes item, user B still sees it until refresh
 2. **Client-side IDs**: `Date.now()` not guaranteed unique
-3. **No optimistic updates**: UI waits for PocketBase response
+3. **No optimistic updates**: UI waits for Firestore response
 4. **No conflict resolution**: Last write wins
 
 #### 🟡 MEDIUM
 
-1. **Reactive object mutation**: Direct mutation after PocketBase update could cause issues
+1. **Reactive object mutation**: Direct mutation after Firestore update could cause issues
 2. **No request deduplication**: Multiple saves could overwrite each other
 3. **Single record**: Locks app to one picnic_state per collection (assumes only one event)
 
-### PocketBase Queries
+### Firestore Queries
 
 ```javascript
 // Fetch (once on mount)
@@ -1111,7 +1111,7 @@ await pb.collection(COLLECTION).update(recordId, fields);
 
 1. Extract `editing` state from data refs (separate UI state)
 2. Batch saves: Don't save on every item change
-3. Use PocketBase query filters instead of client-side filtering
+3. Use Firestore query filters instead of client-side filtering
 4. Debounce rapid saves
 5. Implement undo/redo for edits
 6. Add conflict detection
@@ -1254,7 +1254,7 @@ const tl = gsap.timeline({
 - ❌ HeroSection: Does NOT kill
 - ⚠️ NavBar: Does NOT kill
 
-#### Risk 4: PocketBase Subscription Never Unsubscribed
+#### Risk 4: Firestore Subscription Never Unsubscribed
 
 **useStore.js**
 
@@ -1291,7 +1291,7 @@ async function push(fields) {
   try {
     await pb.collection(COLLECTION).update(recordId, fields);
   } catch (e) {
-    console.error("PocketBase write error:", e.message);
+    console.error("Firestore write error:", e.message);
     // ❌ User sees no error message
     // Data still shows as edited but not saved
   }
@@ -1519,7 +1519,7 @@ NavBar
 
 ### Cleanup Audit
 
-| Component           | ScrollTrigger Killed | RAF Cleared | Intervals Cleared | Event Listeners Removed | PocketBase Unsubscribed |
+| Component           | ScrollTrigger Killed | RAF Cleared | Intervals Cleared | Event Listeners Removed | Firestore Unsubscribed |
 | ------------------- | -------------------- | ----------- | ----------------- | ----------------------- | ----------------------- |
 | HeroSection         | ❌                   | ❌          | N/A               | ❌ (resize listener)    | N/A                     |
 | CountdownSection    | ✅                   | ✅          | ✅                | N/A                     | N/A                     |
@@ -1556,7 +1556,7 @@ onBeforeUnmount(() => {
 });
 ```
 
-#### 2. PocketBase Subscription Cleanup
+#### 2. Firestore Subscription Cleanup
 
 ```javascript
 // useStore.js
@@ -1702,7 +1702,7 @@ function showError(message) {
 // Expose globally or via provide/inject
 ```
 
-#### 8. Optimize PocketBase Operations
+#### 8. Optimize Firestore Operations
 
 ```javascript
 // Batch updates instead of saving entire array
@@ -1846,7 +1846,7 @@ Before making ANY changes to GSAP-heavy components:
 | File                                   | Priority    | Issues                                                    |
 | -------------------------------------- | ----------- | --------------------------------------------------------- |
 | src/components/HeroSection.vue         | 🔴 CRITICAL | Memory leak, RAF not cleared, resize listener not removed |
-| src/composables/useStore.js            | 🔴 CRITICAL | PocketBase subscription never unsubscribed                |
+| src/composables/useStore.js            | 🔴 CRITICAL | Firestore subscription never unsubscribed                |
 | src/components/CountdownSection.vue    | 🟠 HIGH     | Good cleanup, but verify ref stability                    |
 | src/components/GamesSection.vue        | 🟠 HIGH     | Icon animation timing fragile                             |
 | src/components/TimelineSection.vue     | 🟡 MEDIUM   | Add tablet breakpoints                                    |
@@ -1978,11 +1978,11 @@ The PANDA BERPICNIC project is **production-ready with important caveats**. The 
 - Smooth animations and micro-interactions
 - Good visual design with tropical theme
 - Proper responsive design foundation
-- Clean PocketBase integration concept
+- Clean Firestore integration concept
 
 ⚠️ **Critical Issues**:
 
-1. Memory leaks (Three.js, RequestAnimationFrame, PocketBase subscription)
+1. Memory leaks (Three.js, RequestAnimationFrame, Firestore subscription)
 2. Missing ScrollTrigger cleanup in 5/10 components
 3. No mobile touch support for hover effects
 

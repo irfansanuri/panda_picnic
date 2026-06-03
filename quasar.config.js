@@ -20,12 +20,6 @@ module.exports = configure(function (/* ctx */) {
 
     devServer: {
       open: true,
-      proxy: {
-        "/api": {
-          target: "http://localhost:8090",
-          changeOrigin: true,
-        },
-      },
     },
 
     framework: {

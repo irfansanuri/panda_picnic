@@ -37,7 +37,7 @@ if (mouseMoveBound && onMouseMove) {
 
 ---
 
-### 2. PocketBase Subscription Cleanup ✅
+### 2. Firestore Subscription Cleanup ✅
 
 **Files**:
 
@@ -108,7 +108,7 @@ onBeforeUnmount(() => {
 
 - **HeroSection RAF loop**: Continues running after unmount, 60fps × ∞
 - **Mousemove listener**: Accumulates +1 listener per navigation
-- **PocketBase subscription**: Accumulates +1 listener per data load
+- **Firestore subscription**: Accumulates +1 listener per data load
 - **6 Components**: ScrollTrigger instances not cleaned up
 
 **Symptoms**:
@@ -301,7 +301,7 @@ const createCRUD = (name, initialValue = []) => ({
 
 ### Phase 8: Add Error Handling & User Feedback ⏳
 
-**Goal**: Improve UX when PocketBase operations fail
+**Goal**: Improve UX when Firestore operations fail
 
 **Current Issues**:
 
@@ -316,7 +316,7 @@ const createCRUD = (name, initialValue = []) => ({
 - Loading indicators during sync
 - Optimistic updates
 
-**Components Affected**: All using PocketBase
+**Components Affected**: All using Firestore
 
 **GSAP Protection**: ✅ Safe - UX additions only
 
@@ -358,7 +358,7 @@ const createCRUD = (name, initialValue = []) => ({
 
 ### Phase 10: Store Optimization ⏳
 
-**Goal**: Prevent duplicate PocketBase requests, implement caching
+**Goal**: Prevent duplicate Firestore requests, implement caching
 
 **Current**: Fetches full collection on mount, updates on subscription
 
@@ -477,7 +477,7 @@ export async function ensureLoaded() {
 - [ ] Mobile (375px): Animations smooth
 
 - [ ] Memory: No leaks on navigation
-- [ ] Memory: PocketBase listeners cleaned
+- [ ] Memory: Firestore listeners cleaned
 - [ ] Memory: ScrollTrigger instances killed
 
 **DevTools Verification**:
@@ -495,7 +495,7 @@ export async function ensureLoaded() {
 - ✅ All existing features work identically
 - ✅ All GSAP animations preserved
 - ✅ All workflows unchanged
-- ✅ PocketBase interactions unchanged
+- ✅ Firestore interactions unchanged
 - ✅ No broken routes
 
 ### Performance Improved

@@ -25,7 +25,7 @@ Missing cleanup:
 SYMPTOMS: Check with DevTools → Memory usage stays high after navigation
 ```
 
-### 2. PocketBase Subscription Never Unsubscribed
+### 2. Firestore Subscription Never Unsubscribed
 
 ```
 IMPACT: High (listener stays active indefinitely)
@@ -103,7 +103,7 @@ FIX: Add @media (max-width: 768px) variants
 ### Critical (This Week)
 
 - [ ] Add `onBeforeUnmount` cleanup to HeroSection (RAF, renderer, resize listener)
-- [ ] Fix PocketBase subscription (store handle, cleanup)
+- [ ] Fix Firestore subscription (store handle, cleanup)
 - [ ] Add ScrollTrigger cleanup to 6 components
 - [ ] Test memory usage in DevTools before/after fixes
 
@@ -117,7 +117,7 @@ FIX: Add @media (max-width: 768px) variants
 ### Medium Priority (Sprint 3)
 
 - [ ] Extract store CRUD patterns
-- [ ] Add error handling for PocketBase failures
+- [ ] Add error handling for Firestore failures
 - [ ] Optimize particle count on mobile
 - [ ] Add performance monitoring
 
@@ -161,7 +161,7 @@ FIX: Add @media (max-width: 768px) variants
 │  └─ ScrollTrigger ← NEVER KILLED
 │
 ├─ useStore
-│  └─ PocketBase subscription ← NEVER UNSUBSCRIBED
+│  └─ Firestore subscription ← NEVER UNSUBSCRIBED
 │
 └─ 6 other components
    └─ ScrollTrigger ← NEVER KILLED
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
 });
 ```
 
-### Fix 2: PocketBase Unsubscribe
+### Fix 2: Firestore Unsubscribe
 
 ```javascript
 // In useStore.js
@@ -221,7 +221,7 @@ async function initPB() {
       // ... existing handler ...
     });
   } catch (e) {
-    console.warn("🐼 PocketBase unavailable:", e.message);
+    console.warn("🐼 Firestore unavailable:", e.message);
   }
 }
 

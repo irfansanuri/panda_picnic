@@ -176,7 +176,7 @@ onMounted(() => {
     nextTick(initAnimations)
 })
 
-// Fallback: if cards weren't rendered yet (PocketBase still loading), init when data arrives
+// Fallback: if cards weren't rendered yet (store data still loading), init when data arrives
 watch(gamesList, () => { nextTick(initAnimations) }, { once: true })
 
 onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
