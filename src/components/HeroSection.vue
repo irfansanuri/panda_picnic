@@ -329,6 +329,14 @@ onBeforeUnmount(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+
+    @media (max-width: 900px) {
+        // Prevent top clipping when mobile stack is taller than viewport.
+        height: auto;
+        min-height: 100svh;
+        justify-content: flex-start;
+        padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
+    }
 }
 
 .hero__canvas {
@@ -368,7 +376,7 @@ onBeforeUnmount(() => {
     @media (max-width: 900px) {
         flex-direction: column;
         text-align: center;
-        padding: 80px 20px 40px;
+        padding: 20px 20px 40px;
     }
 }
 
@@ -520,6 +528,7 @@ onBeforeUnmount(() => {
 
     @media (max-width: 900px) {
         order: -1;
+        margin-top: 8px;
     }
 }
 
