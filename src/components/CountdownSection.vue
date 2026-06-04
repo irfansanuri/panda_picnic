@@ -54,6 +54,7 @@ const footerRef = ref(null)
 const cardRefs = reactive({})
 const numRefs = reactive({})
 let interval
+let countdownMatchMedia = null
 
 const TARGET = new Date('2026-06-13T08:00:00+08:00')
 const time = reactive({ days: 0, hours: 0, minutes: 0, seconds: 0 })
@@ -99,52 +100,66 @@ onMounted(() => {
     interval = setInterval(tick, 1000)
 
     const cards = Object.values(cardRefs)
-    // Each card flies in from its own corner
-    const corners = [
-        { x: -500, y: -350, rotation: -60 },
-        { x: 500, y: -350, rotation: 60 },
-        { x: -500, y: 350, rotation: 45 },
-        { x: 500, y: 350, rotation: -45 },
-    ]
-    gsap.set(headerRef.value, { opacity: 0, y: -80 })
-    gsap.set(footerRef.value, { opacity: 0, y: 80 })
-    cards.forEach((card, i) => {
-        gsap.set(card, { opacity: 0, scale: 0.2, ...(corners[i] ?? corners[0]) })
+    countdownMatchMedia = gsap.matchMedia()
+
+    countdownMatchMedia.add('(min-width: 901px)', () => {
+        const corners = [
+            { x: -500, y: -350, rotation: -60 },
+            { x: 500, y: -350, rotation: 60 },
+            { x: -500, y: 350, rotation: 45 },
+            { x: 500, y: 350, rotation: -45 },
+        ]
+        gsap.set(headerRef.value, { opacity: 0, y: -80 })
+        gsap.set(footerRef.value, { opacity: 0, y: 80 })
+        cards.forEach((card, i) => {
+            gsap.set(card, { opacity: 0, scale: 0.2, ...(corners[i] ?? corners[0]) })
+        })
+
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                pin: true, scrub: 1.5,
+                start: 'top top', end: '+=1400',
+                anticipatePin: 1,
+            }
+        })
+
+        tl
+            .to(headerRef.value, { opacity: 1, y: 0, duration: 0.12, ease: 'back.out(2)' })
+            .to(cards[0], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.1)
+            .to(cards[1], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.16)
+            .to(cards[2], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.22)
+            .to(cards[3], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.28)
+            .to(footerRef.value, { opacity: 1, y: 0, duration: 0.1 }, 0.35)
+            .to({}, { duration: 0.3 })
+            .to(cards[0], { x: -400, y: -280, rotation: -55, opacity: 0, scale: 0.3, duration: 0.22 }, 0.72)
+            .to(cards[1], { x: 400, y: -280, rotation: 55, opacity: 0, scale: 0.3, duration: 0.22 }, 0.74)
+            .to(cards[2], { x: -400, y: 280, rotation: 40, opacity: 0, scale: 0.3, duration: 0.22 }, 0.76)
+            .to(cards[3], { x: 400, y: 280, rotation: -40, opacity: 0, scale: 0.3, duration: 0.22 }, 0.78)
+            .to(headerRef.value, { y: -100, opacity: 0, duration: 0.2 }, 0.72)
+            .to(footerRef.value, { y: 100, opacity: 0, duration: 0.2 }, 0.72)
     })
 
-    const tl = gsap.timeline({
-        scrollTrigger: {
-            trigger: sectionRef.value,
-            pin: true, scrub: 1.5,
-            start: 'top top', end: '+=1400',
-            anticipatePin: 1,
-        }
+    countdownMatchMedia.add('(max-width: 900px)', () => {
+        gsap.set(cards, { clearProps: 'all' })
+        gsap.set([headerRef.value, footerRef.value], { clearProps: 'all' })
+
+        gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                start: 'top 88%',
+                once: true,
+            }
+        })
+            .from(headerRef.value, { opacity: 0, y: 30, duration: 0.35 })
+            .from(cards, { opacity: 0, y: 28, stagger: 0.08, duration: 0.3, ease: 'power2.out' }, 0.08)
+            .from(footerRef.value, { opacity: 0, y: 20, duration: 0.28 }, 0.22)
     })
-
-    // ENTRY: header drops + cards fly in from corners with spring
-    tl
-        .to(headerRef.value, { opacity: 1, y: 0, duration: 0.12, ease: 'back.out(2)' })
-        .to(cards[0], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.1)
-        .to(cards[1], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.16)
-        .to(cards[2], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.22)
-        .to(cards[3], { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1, duration: 0.28, ease: 'back.out(1.8)' }, 0.28)
-        .to(footerRef.value, { opacity: 1, y: 0, duration: 0.1 }, 0.35)
-
-    // HOLD
-    tl.to({}, { duration: 0.3 })
-
-    // EXIT: scatter to corners
-    tl
-        .to(cards[0], { x: -400, y: -280, rotation: -55, opacity: 0, scale: 0.3, duration: 0.22 }, 0.72)
-        .to(cards[1], { x: 400, y: -280, rotation: 55, opacity: 0, scale: 0.3, duration: 0.22 }, 0.74)
-        .to(cards[2], { x: -400, y: 280, rotation: 40, opacity: 0, scale: 0.3, duration: 0.22 }, 0.76)
-        .to(cards[3], { x: 400, y: 280, rotation: -40, opacity: 0, scale: 0.3, duration: 0.22 }, 0.78)
-        .to(headerRef.value, { y: -100, opacity: 0, duration: 0.2 }, 0.72)
-        .to(footerRef.value, { y: 100, opacity: 0, duration: 0.2 }, 0.72)
 })
 
 onBeforeUnmount(() => {
     clearInterval(interval)
+    countdownMatchMedia?.revert()
     ScrollTrigger.getAll().forEach(st => st.kill())
 })
 </script>
@@ -157,6 +172,13 @@ onBeforeUnmount(() => {
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+
+    @media (max-width: 900px) {
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: 72px 0;
+    }
 }
 
 // Deco
@@ -190,6 +212,10 @@ onBeforeUnmount(() => {
 .cdown__header {
     margin-bottom: 50px;
     opacity: 0;
+
+    @media (max-width: 900px) {
+        margin-bottom: 32px;
+    }
 }
 
 .cdown__grid {
@@ -203,6 +229,11 @@ onBeforeUnmount(() => {
     @media (max-width: 640px) {
         grid-template-columns: repeat(2, 1fr);
         max-width: 360px;
+    }
+
+    @media (max-width: 420px) {
+        grid-template-columns: 1fr;
+        max-width: 260px;
     }
 }
 
@@ -290,6 +321,13 @@ onBeforeUnmount(() => {
     border-radius: 50px;
     padding: 12px 28px;
     box-shadow: var(--shadow-sm);
+
+    @media (max-width: 640px) {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 18px;
+    }
 }
 
 .cdown__footer-text {
@@ -297,5 +335,6 @@ onBeforeUnmount(() => {
     font-size: clamp(0.8rem, 2vw, 1rem);
     font-weight: 700;
     color: var(--navy);
+    text-align: center;
 }
 </style>

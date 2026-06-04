@@ -46,6 +46,7 @@ const headerRef = ref(null)
 const gridRef = ref(null)
 const mapRef = ref(null)
 const cardRefs = reactive({})
+let detailsMatchMedia = null
 
 const details = [
     { icon: '📍', label: 'Tempat', value: 'Pantai Masjid Tanah', sub: 'Melaka' },
@@ -67,54 +68,68 @@ function resetTilt(i) {
 }
 
 onMounted(() => {
-    // Y-axis 3D flip reveal — alternating from left & right
-    gsap.set(headerRef.value, { opacity: 0, y: 60 })
-    gsap.set(cardRefs[0], { rotateY: -120, x: -80, opacity: 0, transformPerspective: 1200 })
-    gsap.set(cardRefs[1], { rotateY: 120, x: 80, opacity: 0, transformPerspective: 1200 })
-    gsap.set(cardRefs[2], { rotateY: -110, x: -80, opacity: 0, transformPerspective: 1200 })
-    gsap.set(cardRefs[3], { rotateY: 110, x: 80, opacity: 0, transformPerspective: 1200 })
-    gsap.set(mapRef.value, { opacity: 0, y: 40 })
+    detailsMatchMedia = gsap.matchMedia()
 
-    const tl = gsap.timeline({
-        scrollTrigger: {
-            trigger: sectionRef.value,
-            pin: true, scrub: 1.5,
-            start: 'top top', end: '+=1400',
-            anticipatePin: 1,
-        }
+    detailsMatchMedia.add('(min-width: 901px)', () => {
+        gsap.set(headerRef.value, { opacity: 0, y: 60 })
+        gsap.set(cardRefs[0], { rotateY: -120, x: -80, opacity: 0, transformPerspective: 1200 })
+        gsap.set(cardRefs[1], { rotateY: 120, x: 80, opacity: 0, transformPerspective: 1200 })
+        gsap.set(cardRefs[2], { rotateY: -110, x: -80, opacity: 0, transformPerspective: 1200 })
+        gsap.set(cardRefs[3], { rotateY: 110, x: 80, opacity: 0, transformPerspective: 1200 })
+        gsap.set(mapRef.value, { opacity: 0, y: 40 })
+
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                pin: true, scrub: 1.5,
+                start: 'top top', end: '+=1400',
+                anticipatePin: 1,
+            }
+        })
+
+        tl
+            .to(headerRef.value, { opacity: 1, y: 0, duration: 0.12 })
+            .to(cardRefs[0], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.1)
+            .to(cardRefs[1], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.16)
+            .to(cardRefs[2], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.22)
+            .to(cardRefs[3], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.28)
+            .to(mapRef.value, { opacity: 1, y: 0, duration: 0.1 }, 0.36)
+            .to(cardRefs[0], { rotateZ: -1.5, duration: 0.08, ease: 'sine.inOut' }, 0.42)
+            .to(cardRefs[1], { rotateZ: 1.5, duration: 0.08, ease: 'sine.inOut' }, 0.44)
+            .to(cardRefs[2], { rotateZ: -1.2, duration: 0.08, ease: 'sine.inOut' }, 0.46)
+            .to(cardRefs[3], { rotateZ: 1.2, duration: 0.08, ease: 'sine.inOut' }, 0.48)
+            .to(Object.values(cardRefs), { rotateZ: 0, duration: 0.1 }, 0.5)
+            .to({}, { duration: 0.2 })
+            .to(cardRefs[0], { rotateY: 90, x: -120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.72)
+            .to(cardRefs[1], { rotateY: -90, x: 120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.74)
+            .to(cardRefs[2], { rotateY: 90, x: -120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.76)
+            .to(cardRefs[3], { rotateY: -90, x: 120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.78)
+            .to(headerRef.value, { y: -80, opacity: 0, duration: 0.15 }, 0.74)
+            .to(mapRef.value, { y: 80, opacity: 0, duration: 0.15 }, 0.74)
     })
 
-    // ENTRY: cards flip in on Y axis like book pages
-    tl
-        .to(headerRef.value, { opacity: 1, y: 0, duration: 0.12 })
-        .to(cardRefs[0], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.1)
-        .to(cardRefs[1], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.16)
-        .to(cardRefs[2], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.22)
-        .to(cardRefs[3], { rotateY: 0, x: 0, opacity: 1, duration: 0.26, ease: 'back.out(1.4)' }, 0.28)
-        .to(mapRef.value, { opacity: 1, y: 0, duration: 0.1 }, 0.36)
+    detailsMatchMedia.add('(max-width: 900px)', () => {
+        const cards = Object.values(cardRefs)
+        gsap.set(cards, { clearProps: 'all' })
+        gsap.set([headerRef.value, mapRef.value], { clearProps: 'all' })
 
-    // Settle: each card does a tiny self-right tilt
-    tl
-        .to(cardRefs[0], { rotateZ: -1.5, duration: 0.08, ease: 'sine.inOut' }, 0.42)
-        .to(cardRefs[1], { rotateZ: 1.5, duration: 0.08, ease: 'sine.inOut' }, 0.44)
-        .to(cardRefs[2], { rotateZ: -1.2, duration: 0.08, ease: 'sine.inOut' }, 0.46)
-        .to(cardRefs[3], { rotateZ: 1.2, duration: 0.08, ease: 'sine.inOut' }, 0.48)
-        .to(Object.values(cardRefs), { rotateZ: 0, duration: 0.1 }, 0.5)
-
-    // HOLD
-    tl.to({}, { duration: 0.2 })
-
-    // EXIT: cards flip back out the other direction
-    tl
-        .to(cardRefs[0], { rotateY: 90, x: -120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.72)
-        .to(cardRefs[1], { rotateY: -90, x: 120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.74)
-        .to(cardRefs[2], { rotateY: 90, x: -120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.76)
-        .to(cardRefs[3], { rotateY: -90, x: 120, opacity: 0, scale: 0.8, duration: 0.2 }, 0.78)
-        .to(headerRef.value, { y: -80, opacity: 0, duration: 0.15 }, 0.74)
-        .to(mapRef.value, { y: 80, opacity: 0, duration: 0.15 }, 0.74)
+        gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                start: 'top 88%',
+                once: true,
+            }
+        })
+            .from(headerRef.value, { opacity: 0, y: 30, duration: 0.35 })
+            .from(cards, { opacity: 0, y: 28, stagger: 0.08, duration: 0.3, ease: 'power2.out' }, 0.08)
+            .from(mapRef.value, { opacity: 0, y: 20, duration: 0.28 }, 0.22)
+    })
 })
 
-onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
+onBeforeUnmount(() => {
+    detailsMatchMedia?.revert()
+    ScrollTrigger.getAll().forEach(st => st.kill())
+})
 </script>
 
 <style scoped lang="scss">
@@ -125,10 +140,21 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+
+    @media (max-width: 900px) {
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: 72px 0;
+    }
 }
 
 .details__header {
     margin-bottom: 50px;
+
+    @media (max-width: 900px) {
+        margin-bottom: 32px;
+    }
 }
 
 .details__grid {
@@ -155,6 +181,10 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     position: relative;
     overflow: hidden;
     transition: box-shadow 0.3s;
+
+    @media (max-width: 900px) {
+        padding: 24px 18px;
+    }
 }
 
 .details__card-shine {
@@ -215,6 +245,12 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     font-size: 1rem;
     padding: 14px 36px;
     margin-bottom: 14px;
+
+    @media (max-width: 900px) {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px;
+    }
 }
 
 .details__map-note {

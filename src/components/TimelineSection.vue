@@ -49,6 +49,7 @@ const fillLine = ref(null)
 const sunEl = ref(null)
 const eventRefs = reactive({})
 const dotRefs = reactive({})
+let timelineMatchMedia = null
 
 const events = [
     { time: '7:30 Pagi', icon: '🌅', name: 'Bertolak dari KL' },
@@ -68,51 +69,67 @@ onMounted(() => {
     const dots = Object.values(dotRefs)
     const total = events.length
 
-    gsap.set(headerRef.value, { opacity: 0, y: 60 })
-    gsap.set(cards, { opacity: 0, scale: 0.4 })
-    gsap.set(dots, { scale: 0 })
-    gsap.set(fillLine.value, { scaleX: 0, transformOrigin: 'left center' })
-    gsap.set(sunEl.value, { opacity: 0, left: '0%' })
+    timelineMatchMedia = gsap.matchMedia()
 
-    const tl = gsap.timeline({
-        scrollTrigger: {
-            trigger: sectionRef.value,
-            pin: true,
-            scrub: 0.9,
-            start: 'top top', end: '+=1700',
-            anticipatePin: 1,
-            fastScrollEnd: true,
-            invalidateOnRefresh: true,
+    timelineMatchMedia.add('(min-width: 901px)', () => {
+        gsap.set(headerRef.value, { opacity: 0, y: 60 })
+        gsap.set(cards, { opacity: 0, scale: 0.4 })
+        gsap.set(dots, { scale: 0 })
+        gsap.set(fillLine.value, { scaleX: 0, transformOrigin: 'left center' })
+        gsap.set(sunEl.value, { opacity: 0, left: '0%' })
+
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                pin: true,
+                scrub: 0.9,
+                start: 'top top', end: '+=1700',
+                anticipatePin: 1,
+                fastScrollEnd: true,
+                invalidateOnRefresh: true,
+            }
+        })
+
+        tl.to(headerRef.value, { opacity: 1, y: 0, duration: 0.08 })
+        tl.to(fillLine.value, { scaleX: 1, duration: 0.5, ease: 'none' }, 0.1)
+        tl.to(sunEl.value, { opacity: 1, left: '95%', duration: 0.5, ease: 'none' }, 0.1)
+
+        for (let i = 0; i < total; i++) {
+            const pct = 0.1 + (i / (total - 1)) * 0.45
+            tl.to(dots[i], { scale: 1.2, duration: 0.04, ease: 'back.out(3)' }, pct)
+            tl.to(dots[i], { scale: 1, duration: 0.03 })
+            tl.to(cards[i], { opacity: 1, scale: 1, duration: 0.05, ease: 'back.out(2)' }, pct + 0.02)
         }
+
+        tl.to({}, { duration: 0.18 })
+        tl
+            .to(cards, { opacity: 0, y: 60, stagger: 0.02, duration: 0.2 }, 0.82)
+            .to(fillLine.value, { opacity: 0, duration: 0.15 }, 0.84)
+            .to(sunEl.value, { opacity: 0, y: -50, duration: 0.15 }, 0.84)
+            .to(headerRef.value, { opacity: 0, y: -60, duration: 0.15 }, 0.84)
     })
 
-    // Header in
-    tl.to(headerRef.value, { opacity: 1, y: 0, duration: 0.08 })
+    timelineMatchMedia.add('(max-width: 900px)', () => {
+        gsap.set([headerRef.value, fillLine.value, sunEl.value], { clearProps: 'all' })
+        gsap.set(cards, { clearProps: 'all' })
+        gsap.set(dots, { clearProps: 'all' })
 
-    // Line draws left to right while events pop up sequentially
-    tl.to(fillLine.value, { scaleX: 1, duration: 0.5, ease: 'none' }, 0.1)
-    tl.to(sunEl.value, { opacity: 1, left: '95%', duration: 0.5, ease: 'none' }, 0.1)
-
-    // Each dot and card appears as the line reaches it
-    for (let i = 0; i < total; i++) {
-        const pct = 0.1 + (i / (total - 1)) * 0.45
-        tl.to(dots[i], { scale: 1.2, duration: 0.04, ease: 'back.out(3)' }, pct)
-        tl.to(dots[i], { scale: 1, duration: 0.03 })
-        tl.to(cards[i], { opacity: 1, scale: 1, duration: 0.05, ease: 'back.out(2)' }, pct + 0.02)
-    }
-
-    // HOLD
-    tl.to({}, { duration: 0.18 })
-
-    // EXIT: everything fades to sandy yellow drift
-    tl
-        .to(cards, { opacity: 0, y: 60, stagger: 0.02, duration: 0.2 }, 0.82)
-        .to(fillLine.value, { opacity: 0, duration: 0.15 }, 0.84)
-        .to(sunEl.value, { opacity: 0, y: -50, duration: 0.15 }, 0.84)
-        .to(headerRef.value, { opacity: 0, y: -60, duration: 0.15 }, 0.84)
+        gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                start: 'top 88%',
+                once: true,
+            }
+        })
+            .from(headerRef.value, { opacity: 0, y: 30, duration: 0.35 })
+            .from(cards, { opacity: 0, y: 24, stagger: 0.06, duration: 0.28, ease: 'power2.out' }, 0.08)
+    })
 })
 
-onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
+onBeforeUnmount(() => {
+    timelineMatchMedia?.revert()
+    ScrollTrigger.getAll().forEach(st => st.kill())
+})
 </script>
 
 <style scoped lang="scss">
@@ -123,11 +140,22 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+
+    @media (max-width: 900px) {
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: 72px 0;
+    }
 }
 
 .timeline__header {
     margin-bottom: 60px;
     opacity: 0;
+
+    @media (max-width: 900px) {
+        margin-bottom: 28px;
+    }
 }
 
 .timeline__track-wrap {
@@ -136,6 +164,14 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     margin: 0 auto;
     width: 100%;
     max-width: 1100px;
+
+    @media (max-width: 900px) {
+        display: grid;
+        gap: 18px;
+        height: auto;
+        max-width: 100%;
+        padding-left: 22px;
+    }
 }
 
 // Ground line
@@ -149,6 +185,16 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     background: linear-gradient(90deg, var(--sand), var(--wood-sign), var(--sand));
     border-radius: 4px;
     opacity: 0.4;
+
+    @media (max-width: 900px) {
+        top: 0;
+        bottom: 0;
+        left: 18px;
+        right: auto;
+        width: 4px;
+        height: auto;
+        transform: none;
+    }
 }
 
 .timeline__fill {
@@ -162,6 +208,10 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     border-radius: 4px;
     box-shadow: 0 0 16px rgba(91, 191, 232, 0.5);
     transform-origin: left center;
+
+    @media (max-width: 900px) {
+        display: none;
+    }
 }
 
 .timeline__sun {
@@ -174,6 +224,10 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     filter: drop-shadow(0 0 8px rgba(245, 197, 24, 0.6));
     animation: sunPulse 2s ease-in-out infinite;
     pointer-events: none;
+
+    @media (max-width: 900px) {
+        display: none;
+    }
 }
 
 // Events
@@ -186,11 +240,31 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     align-items: center;
     gap: 8px;
 
+    @media (max-width: 900px) {
+        position: relative;
+        top: auto;
+        left: auto !important;
+        transform: none;
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        align-items: start;
+        justify-items: start;
+        gap: 12px;
+    }
+
     &--above {
         flex-direction: column-reverse;
 
         .timeline__card {
             margin-bottom: 12px;
+        }
+
+        @media (max-width: 900px) {
+            flex-direction: initial;
+
+            .timeline__card {
+                margin-bottom: 0;
+            }
         }
     }
 
@@ -199,6 +273,14 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
 
         .timeline__card {
             margin-top: 12px;
+        }
+
+        @media (max-width: 900px) {
+            flex-direction: initial;
+
+            .timeline__card {
+                margin-top: 0;
+            }
         }
     }
 }
@@ -226,6 +308,13 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     max-width: 130px;
     opacity: 0;
     will-change: transform, opacity;
+
+    @media (max-width: 900px) {
+        min-width: 0;
+        max-width: none;
+        width: 100%;
+        text-align: left;
+    }
 }
 
 .timeline__card-time {

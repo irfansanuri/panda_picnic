@@ -104,6 +104,14 @@ const posterError = ref(false)
 
 let renderer, scene, camera, animId
 let onMouseMove, mouseMoveBound = false
+let heroMatchMedia = null
+
+function getHeroCanvasSize() {
+    const width = window.innerWidth
+    const height = Math.max(window.innerHeight, sectionRef.value?.offsetHeight || 0)
+
+    return { width, height }
+}
 
 function leafStyle(i) {
     return {
@@ -123,8 +131,7 @@ function scrollNext() {
 // ── Three.js warm sky ──────────────────────────────────
 function initThree() {
     const canvas = canvasRef.value
-    const W = window.innerWidth
-    const H = window.innerHeight
+    const { width: W, height: H } = getHeroCanvasSize()
 
     scene = new THREE.Scene()
     scene.fog = new THREE.Fog(0xD4EBF5, 20, 80)
@@ -203,7 +210,9 @@ function initThree() {
 }
 
 function onResize() {
-    const W = window.innerWidth, H = window.innerHeight
+    if (!camera || !renderer) return
+
+    const { width: W, height: H } = getHeroCanvasSize()
     camera.aspect = W / H
     camera.updateProjectionMatrix()
     renderer.setSize(W, H)
@@ -232,70 +241,91 @@ function initGSAP() {
     const rainbowP = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', '#54A0FF']
     const rainbowB = ['#54A0FF', '#5F27CD', '#FF6B6B', '#48DBFB', '#FF9F43', '#FECA57', '#FF6B6B', '#54A0FF', '#FF9F43']
 
-    // ── ENTRY ──────────────────────────────────────────
-    const entry = gsap.timeline()
-    entry
-        .fromTo(badgeRef.value,
-            { opacity: 0, scale: 0.4, rotation: -12, y: -20 },
-            { opacity: 1, scale: 1, rotation: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.45)' }, 0.15)
-        .fromTo(pandaChars,
-            { opacity: 0, y: 120, rotationX: -90, color: (i) => rainbowP[i % rainbowP.length], transformPerspective: 500 },
-            { opacity: 1, y: 0, rotationX: 0, color: '#1B3A6B', stagger: 0.09, duration: 0.7, ease: 'back.out(3)' }, 0.4)
-        .fromTo(berpicnicChars,
-            { opacity: 0, y: 90, rotationX: -80, color: (i) => rainbowB[i % rainbowB.length], transformPerspective: 500 },
-            { opacity: 1, y: 0, rotationX: 0, color: '#C84B2E', stagger: 0.07, duration: 0.6, ease: 'back.out(2.5)' }, 0.7)
-        .fromTo(yearRef.value,
-            { opacity: 0, scale: 0.4, rotation: -8 },
-            { opacity: 1, scale: 1, rotation: 0, duration: 0.7, ease: 'elastic.out(1, 0.4)' }, 0.98)
-        .fromTo(chipItems,
-            { opacity: 0, x: -70, rotation: -5 },
-            { opacity: 1, x: 0, rotation: 0, stagger: 0.14, duration: 0.55, ease: 'back.out(2)' }, 1.08)
-        .fromTo(ctaRef.value,
-            { opacity: 0, scale: 0.6, y: 30 },
-            { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' }, 1.28)
-        .fromTo(posterRef.value,
-            { opacity: 0, rotateY: 90, x: 130, transformPerspective: 1000 },
-            { opacity: 1, rotateY: 0, x: 0, duration: 1, ease: 'power3.out' }, 0.35)
-        .fromTo(scrollHint.value,
-            { opacity: 0, y: 10 },
-            { opacity: 1, y: 0, duration: 0.4 }, 1.45)
+    heroMatchMedia = gsap.matchMedia()
 
-    // Continuous ambient animations
-    gsap.to(posterRef.value, { y: -14, duration: 3, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.6 })
-    gsap.to(badgeRef.value, { rotation: 2, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1 })
-    gsap.to(scrollHint.value, { y: 8, duration: 1.4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.8 })
+    heroMatchMedia.add('(min-width: 901px)', () => {
+        const entry = gsap.timeline()
+        entry
+            .fromTo(badgeRef.value,
+                { opacity: 0, scale: 0.4, rotation: -12, y: -20 },
+                { opacity: 1, scale: 1, rotation: 0, y: 0, duration: 0.8, ease: 'elastic.out(1, 0.45)' }, 0.15)
+            .fromTo(pandaChars,
+                { opacity: 0, y: 120, rotationX: -90, color: (i) => rainbowP[i % rainbowP.length], transformPerspective: 500 },
+                { opacity: 1, y: 0, rotationX: 0, color: '#1B3A6B', stagger: 0.09, duration: 0.7, ease: 'back.out(3)' }, 0.4)
+            .fromTo(berpicnicChars,
+                { opacity: 0, y: 90, rotationX: -80, color: (i) => rainbowB[i % rainbowB.length], transformPerspective: 500 },
+                { opacity: 1, y: 0, rotationX: 0, color: '#C84B2E', stagger: 0.07, duration: 0.6, ease: 'back.out(2.5)' }, 0.7)
+            .fromTo(yearRef.value,
+                { opacity: 0, scale: 0.4, rotation: -8 },
+                { opacity: 1, scale: 1, rotation: 0, duration: 0.7, ease: 'elastic.out(1, 0.4)' }, 0.98)
+            .fromTo(chipItems,
+                { opacity: 0, x: -70, rotation: -5 },
+                { opacity: 1, x: 0, rotation: 0, stagger: 0.14, duration: 0.55, ease: 'back.out(2)' }, 1.08)
+            .fromTo(ctaRef.value,
+                { opacity: 0, scale: 0.6, y: 30 },
+                { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: 'elastic.out(1, 0.45)' }, 1.28)
+            .fromTo(posterRef.value,
+                { opacity: 0, rotateY: 90, x: 130, transformPerspective: 1000 },
+                { opacity: 1, rotateY: 0, x: 0, duration: 1, ease: 'power3.out' }, 0.35)
+            .fromTo(scrollHint.value,
+                { opacity: 0, y: 10 },
+                { opacity: 1, y: 0, duration: 0.4 }, 1.45)
 
-    // ── EXIT: pinned, chars SCATTER ────────────────────
-    const exitTl = gsap.timeline({
-        scrollTrigger: {
-            trigger: sectionRef.value,
-            pin: true, scrub: 1.5,
-            start: 'top top', end: '+=1200',
-            anticipatePin: 1, invalidateOnRefresh: true,
-        }
+        gsap.to(posterRef.value, { y: -14, duration: 3, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.6 })
+        gsap.to(badgeRef.value, { rotation: 2, duration: 2.2, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1 })
+        gsap.to(scrollHint.value, { y: 8, duration: 1.4, yoyo: true, repeat: -1, ease: 'sine.inOut', delay: 1.8 })
+
+        const exitTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: sectionRef.value,
+                pin: true, scrub: 1.5,
+                start: 'top top', end: '+=1200',
+                anticipatePin: 1, invalidateOnRefresh: true,
+            }
+        })
+
+        exitTl.to(posterRef.value, { y: -16, duration: 0.35, ease: 'sine.inOut', overwrite: false }, 0)
+        exitTl.to(posterRef.value, { y: 0, duration: 0.35, ease: 'sine.inOut', overwrite: false }, 0.35)
+
+        exitTl
+            .to(allChars, {
+                x: () => gsap.utils.random(-500, 500),
+                y: () => gsap.utils.random(-350, 350),
+                rotation: () => gsap.utils.random(-540, 540),
+                scale: () => gsap.utils.random(0, 2),
+                opacity: 0,
+                stagger: { each: 0.018, from: 'random' },
+                duration: 0.38,
+            }, 0.6)
+            .to([...chipItems, yearRef.value, badgeRef.value],
+                { y: -120, opacity: 0, stagger: 0.04, duration: 0.22 }, 0.62)
+            .fromTo(posterRef.value,
+                { rotateY: 0, x: 0, scale: 1, opacity: 1, transformPerspective: 1000 },
+                { rotateY: -90, x: 180, scale: 1.15, opacity: 0, duration: 0.32 }, 0.65)
+            .to(scrollHint.value, { opacity: 0, duration: 0.12 }, 0.62)
     })
 
-    // subtle poster breathe while holding
-    exitTl.to(posterRef.value, { y: -16, duration: 0.35, ease: 'sine.inOut', overwrite: false }, 0)
-    exitTl.to(posterRef.value, { y: 0, duration: 0.35, ease: 'sine.inOut', overwrite: false }, 0.35)
+    heroMatchMedia.add('(max-width: 900px)', () => {
+        gsap.set([badgeRef.value, yearRef.value, ctaRef.value, posterRef.value, scrollHint.value, ...chipItems, ...allChars], {
+            clearProps: 'all',
+        })
 
-    // EXIT (60–100%): chars scatter in all directions
-    exitTl
-        .to(allChars, {
-            x: () => gsap.utils.random(-500, 500),
-            y: () => gsap.utils.random(-350, 350),
-            rotation: () => gsap.utils.random(-540, 540),
-            scale: () => gsap.utils.random(0, 2),
-            opacity: 0,
-            stagger: { each: 0.018, from: 'random' },
-            duration: 0.38,
-        }, 0.6)
-        .to([...chipItems, yearRef.value, badgeRef.value],
-            { y: -120, opacity: 0, stagger: 0.04, duration: 0.22 }, 0.62)
-        .fromTo(posterRef.value,
-            { rotateY: 0, x: 0, scale: 1, opacity: 1, transformPerspective: 1000 },
-            { rotateY: -90, x: 180, scale: 1.15, opacity: 0, duration: 0.32 }, 0.65)
-        .to(scrollHint.value, { opacity: 0, duration: 0.12 }, 0.62)
+        gsap.timeline()
+            .fromTo(posterRef.value,
+                { opacity: 0, y: 36, scale: 0.92 },
+                { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: 'power2.out' })
+            .fromTo(badgeRef.value,
+                { opacity: 0, y: 24 },
+                { opacity: 1, y: 0, duration: 0.35 }, 0.08)
+            .fromTo(allChars,
+                { opacity: 0, y: 30 },
+                { opacity: 1, y: 0, stagger: 0.025, duration: 0.32, ease: 'power2.out' }, 0.1)
+            .fromTo([yearRef.value, ...chipItems, ctaRef.value],
+                { opacity: 0, y: 18 },
+                { opacity: 1, y: 0, stagger: 0.06, duration: 0.28, ease: 'power2.out' }, 0.22)
+
+        gsap.set(scrollHint.value, { opacity: 0, display: 'none' })
+    })
 }
 
 onMounted(() => {
@@ -304,6 +334,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+    heroMatchMedia?.revert()
     if (animId) cancelAnimationFrame(animId)
     if (renderer) {
         renderer.dispose()
@@ -331,11 +362,11 @@ onBeforeUnmount(() => {
     justify-content: center;
 
     @media (max-width: 900px) {
-        // Prevent top clipping when mobile stack is taller than viewport.
         height: auto;
         min-height: 100svh;
         justify-content: flex-start;
-        padding-top: calc(env(safe-area-inset-top, 0px) + 72px);
+        padding-top: calc(env(safe-area-inset-top, 0px) + 28px);
+        padding-bottom: 36px;
     }
 }
 
@@ -376,7 +407,8 @@ onBeforeUnmount(() => {
     @media (max-width: 900px) {
         flex-direction: column;
         text-align: center;
-        padding: 20px 20px 40px;
+        gap: 24px;
+        padding: 8px 20px 0;
     }
 }
 
@@ -384,6 +416,13 @@ onBeforeUnmount(() => {
 .hero__text {
     flex: 1;
     max-width: 520px;
+
+    @media (max-width: 900px) {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 }
 
 .hero__badge {
@@ -528,7 +567,7 @@ onBeforeUnmount(() => {
 
     @media (max-width: 900px) {
         order: -1;
-        margin-top: 8px;
+        margin-top: 0;
     }
 }
 
@@ -547,6 +586,10 @@ onBeforeUnmount(() => {
     &:hover {
         transform: rotate(0deg) scale(1.02);
         transition: transform 0.4s ease;
+    }
+
+    @media (max-width: 900px) {
+        width: min(72vw, 320px);
     }
 }
 
@@ -613,6 +656,10 @@ onBeforeUnmount(() => {
     text-transform: uppercase;
     color: var(--navy);
     will-change: opacity;
+
+    @media (max-width: 900px) {
+        display: none;
+    }
 }
 
 .hero__scroll-line {

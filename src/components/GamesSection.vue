@@ -161,11 +161,22 @@ onBeforeUnmount(() => {
     flex-direction: column;
     justify-content: center;
     overflow: hidden;
+
+    @media (max-width: 900px) {
+        min-height: auto;
+        justify-content: flex-start;
+        overflow: visible;
+        padding: 72px 0;
+    }
 }
 
 .games__header {
     margin-bottom: 50px;
     opacity: 0;
+
+    @media (max-width: 900px) {
+        margin-bottom: 30px;
+    }
 }
 
 .games__grid {
@@ -179,7 +190,8 @@ onBeforeUnmount(() => {
     }
 
     @media (max-width: 500px) {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 }
 
@@ -192,6 +204,11 @@ onBeforeUnmount(() => {
     transition: box-shadow 0.3s;
     cursor: pointer;
     opacity: 0;
+
+    @media (max-width: 900px) {
+        opacity: 1;
+        padding: 24px 16px 20px;
+    }
 
     // Type-specific backgrounds — clear contrast for navy text
     &.card-type--card {
