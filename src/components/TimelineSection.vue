@@ -30,6 +30,21 @@
                 </div>
             </div>
 
+            <div class="timeline__mobile-list" ref="mobileListRef">
+                <div
+                    v-for="(event, i) in events"
+                    :key="`mobile-${i}`"
+                    class="timeline__mobile-item"
+                    :ref="el => (mobileItemRefs[i] = el)"
+                >
+                    <div class="timeline__mobile-dot">{{ event.icon }}</div>
+                    <div class="timeline__mobile-card wood-card">
+                        <span class="timeline__mobile-time">{{ event.time }}</span>
+                        <span class="timeline__mobile-name">{{ event.name }}</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sun progress indicator -->
             <div class="timeline__sun" ref="sunEl">☀️</div>
         </div>
@@ -49,6 +64,8 @@ const fillLine = ref(null)
 const sunEl = ref(null)
 const eventRefs = reactive({})
 const dotRefs = reactive({})
+const mobileListRef = ref(null)
+const mobileItemRefs = reactive({})
 let timelineMatchMedia = null
 
 const events = [
@@ -113,6 +130,7 @@ onMounted(() => {
         gsap.set([headerRef.value, fillLine.value, sunEl.value], { clearProps: 'all' })
         gsap.set(cards, { clearProps: 'all' })
         gsap.set(dots, { clearProps: 'all' })
+        const mobileItems = Object.values(mobileItemRefs)
 
         gsap.timeline({
             scrollTrigger: {
@@ -122,7 +140,7 @@ onMounted(() => {
             }
         })
             .from(headerRef.value, { opacity: 0, y: 30, duration: 0.35 })
-            .from(cards, { opacity: 0, y: 24, stagger: 0.06, duration: 0.28, ease: 'power2.out' }, 0.08)
+            .from(mobileItems, { opacity: 0, y: 24, stagger: 0.06, duration: 0.28, ease: 'power2.out' }, 0.08)
     })
 })
 
@@ -155,6 +173,7 @@ onBeforeUnmount(() => {
 
     @media (max-width: 900px) {
         margin-bottom: 28px;
+        opacity: 1;
     }
 }
 
@@ -166,11 +185,32 @@ onBeforeUnmount(() => {
     max-width: 1100px;
 
     @media (max-width: 900px) {
+        display: none;
+    }
+}
+
+.timeline__mobile-list {
+    display: none;
+
+    @media (max-width: 900px) {
         display: grid;
-        gap: 18px;
-        height: auto;
-        max-width: 100%;
+        gap: 14px;
+        position: relative;
         padding-left: 22px;
+        max-width: 460px;
+        margin: 0 auto;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            left: 18px;
+            width: 4px;
+            border-radius: 999px;
+            background: linear-gradient(180deg, var(--sky), var(--ocean), var(--rust));
+            opacity: 0.55;
+        }
     }
 }
 
@@ -185,16 +225,6 @@ onBeforeUnmount(() => {
     background: linear-gradient(90deg, var(--sand), var(--wood-sign), var(--sand));
     border-radius: 4px;
     opacity: 0.4;
-
-    @media (max-width: 900px) {
-        top: 0;
-        bottom: 0;
-        left: 18px;
-        right: auto;
-        width: 4px;
-        height: auto;
-        transform: none;
-    }
 }
 
 .timeline__fill {
@@ -240,31 +270,11 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 8px;
 
-    @media (max-width: 900px) {
-        position: relative;
-        top: auto;
-        left: auto !important;
-        transform: none;
-        display: grid;
-        grid-template-columns: 42px 1fr;
-        align-items: start;
-        justify-items: start;
-        gap: 12px;
-    }
-
     &--above {
         flex-direction: column-reverse;
 
         .timeline__card {
             margin-bottom: 12px;
-        }
-
-        @media (max-width: 900px) {
-            flex-direction: initial;
-
-            .timeline__card {
-                margin-bottom: 0;
-            }
         }
     }
 
@@ -273,14 +283,6 @@ onBeforeUnmount(() => {
 
         .timeline__card {
             margin-top: 12px;
-        }
-
-        @media (max-width: 900px) {
-            flex-direction: initial;
-
-            .timeline__card {
-                margin-top: 0;
-            }
         }
     }
 }
@@ -308,13 +310,6 @@ onBeforeUnmount(() => {
     max-width: 130px;
     opacity: 0;
     will-change: transform, opacity;
-
-    @media (max-width: 900px) {
-        min-width: 0;
-        max-width: none;
-        width: 100%;
-        text-align: left;
-    }
 }
 
 .timeline__card-time {
@@ -333,5 +328,59 @@ onBeforeUnmount(() => {
     font-family: var(--font-display);
     font-size: 0.75rem;
     color: var(--sand-light);
+}
+
+.timeline__mobile-item {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    opacity: 1;
+}
+
+.timeline__mobile-dot {
+    width: 32px;
+    height: 32px;
+    background: white;
+    border: 2px solid var(--sky);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.timeline__mobile-card {
+    min-width: 0;
+    padding: 12px 14px;
+}
+
+.timeline__mobile-time {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.timeline__mobile-name {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    line-height: 1.3;
+    color: var(--sand-light);
+    word-break: break-word;
 }
 </style>

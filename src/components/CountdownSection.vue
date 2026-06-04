@@ -32,9 +32,9 @@
 
             <div class="cdown__footer" ref="footerRef">
                 <div class="cdown__footer-inner">
-                    <span>📅</span>
+                    <span class="cdown__footer-icon">📅</span>
                     <span class="cdown__footer-text">Sabtu, 13 Jun 2026 · 8:00 Pagi · Pantai Masjid Tanah</span>
-                    <span>🏖️</span>
+                    <span class="cdown__footer-icon">🏖️</span>
                 </div>
             </div>
         </div>
@@ -71,6 +71,7 @@ function pad(n) { return String(Math.max(0, n)).padStart(2, '0') }
 function tick() {
     const diff = TARGET - new Date()
     if (diff <= 0) { clearInterval(interval); return }
+    const isCompact = window.matchMedia('(max-width: 640px)').matches
     const prev = { ...time }
     time.days = Math.floor(diff / 86400000)
     time.hours = Math.floor((diff % 86400000) / 3600000)
@@ -80,16 +81,37 @@ function tick() {
     Object.keys(time).forEach((k, idx) => {
         if (prev[k] !== time[k] && numRefs[k]) {
             const el = numRefs[k]
-            // Flip: slide up & out, snap below, slam back in
             gsap.timeline({ overwrite: 'auto' })
-                .to(el, { y: -56, opacity: 0, scale: 0.75, duration: 0.18, ease: 'power3.in' })
-                .set(el, { y: 64, scale: 1.3 })
-                .to(el, { y: 0, opacity: 1, scale: 1, duration: 0.38, ease: 'back.out(3)' })
-            // Card glow pulse
+                .to(el, {
+                    y: isCompact ? -24 : -56,
+                    opacity: 0,
+                    scale: isCompact ? 0.9 : 0.75,
+                    duration: isCompact ? 0.12 : 0.18,
+                    ease: 'power3.in'
+                })
+                .set(el, { y: isCompact ? 28 : 64, scale: isCompact ? 1.08 : 1.3 })
+                .to(el, {
+                    y: 0,
+                    opacity: 1,
+                    scale: 1,
+                    duration: isCompact ? 0.24 : 0.38,
+                    ease: isCompact ? 'power2.out' : 'back.out(3)'
+                })
+
             if (cardRefs[idx]) {
                 gsap.timeline({ overwrite: 'auto' })
-                    .to(cardRefs[idx], { scale: 1.1, boxShadow: '0 0 30px rgba(91,191,232,0.6)', duration: 0.15, ease: 'power2.out' })
-                    .to(cardRefs[idx], { scale: 1, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', duration: 0.5, ease: 'elastic.out(1, 0.4)' })
+                    .to(cardRefs[idx], {
+                        scale: isCompact ? 1.03 : 1.1,
+                        boxShadow: isCompact ? '0 0 16px rgba(91,191,232,0.35)' : '0 0 30px rgba(91,191,232,0.6)',
+                        duration: isCompact ? 0.1 : 0.15,
+                        ease: 'power2.out'
+                    })
+                    .to(cardRefs[idx], {
+                        scale: 1,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        duration: isCompact ? 0.2 : 0.5,
+                        ease: isCompact ? 'power2.out' : 'elastic.out(1, 0.4)'
+                    })
             }
         }
     })
@@ -189,6 +211,11 @@ onBeforeUnmount(() => {
     z-index: 1;
     opacity: 0.35;
 
+    @media (max-width: 640px) {
+        opacity: 0.18;
+        transform: scale(0.8);
+    }
+
     &--sun {
         top: 12%;
         right: 8%;
@@ -215,6 +242,7 @@ onBeforeUnmount(() => {
 
     @media (max-width: 900px) {
         margin-bottom: 32px;
+        opacity: 1;
     }
 }
 
@@ -227,13 +255,14 @@ onBeforeUnmount(() => {
     perspective: 1200px;
 
     @media (max-width: 640px) {
-        grid-template-columns: repeat(2, 1fr);
-        max-width: 360px;
-    }
-
-    @media (max-width: 420px) {
-        grid-template-columns: 1fr;
-        max-width: 260px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        max-width: 100%;
+        width: min(100%, 360px);
+        padding: 14px;
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 12px 30px rgba(27, 58, 107, 0.08);
     }
 }
 
@@ -242,11 +271,25 @@ onBeforeUnmount(() => {
     padding: 0;
     transform-style: preserve-3d;
     opacity: 0;
+
+    @media (max-width: 640px) {
+        min-width: 0;
+        min-height: 132px;
+        opacity: 1;
+    }
 }
 
 .cdown__card-inner {
     padding: 28px 16px 22px;
     position: relative;
+
+    @media (max-width: 640px) {
+        padding: 20px 12px 16px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
 }
 
 .cdown__ropes {
@@ -257,6 +300,10 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: space-between;
     padding: 0 20px;
+
+    @media (max-width: 640px) {
+        display: none;
+    }
 }
 
 .cdown__rope {
@@ -286,6 +333,10 @@ onBeforeUnmount(() => {
     display: block;
     text-shadow: 2px 3px 0 rgba(27, 58, 107, 0.15);
     will-change: transform, color;
+
+    @media (max-width: 640px) {
+        font-size: clamp(2.4rem, 12vw, 3.4rem);
+    }
 }
 
 .cdown__label-en {
@@ -296,6 +347,12 @@ onBeforeUnmount(() => {
     text-transform: uppercase;
     color: rgba(255, 255, 255, 0.7);
     margin-top: 10px;
+
+    @media (max-width: 640px) {
+        font-size: 0.56rem;
+        letter-spacing: 1.8px;
+        margin-top: 8px;
+    }
 }
 
 .cdown__label-my {
@@ -304,12 +361,21 @@ onBeforeUnmount(() => {
     font-weight: 700;
     color: var(--sand-light);
     margin-top: 2px;
+
+    @media (max-width: 640px) {
+        font-size: 0.82rem;
+    }
 }
 
 .cdown__footer {
     text-align: center;
     margin-top: 40px;
     opacity: 0;
+
+    @media (max-width: 640px) {
+        margin-top: 24px;
+        opacity: 1;
+    }
 }
 
 .cdown__footer-inner {
@@ -323,10 +389,19 @@ onBeforeUnmount(() => {
     box-shadow: var(--shadow-sm);
 
     @media (max-width: 640px) {
-        width: 100%;
-        justify-content: center;
-        gap: 10px;
-        padding: 12px 18px;
+        width: min(100%, 360px);
+        display: grid;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 6px;
+        padding: 14px 18px;
+        border-radius: 24px;
+    }
+}
+
+.cdown__footer-icon {
+    @media (max-width: 640px) {
+        display: none;
     }
 }
 
@@ -336,5 +411,10 @@ onBeforeUnmount(() => {
     font-weight: 700;
     color: var(--navy);
     text-align: center;
+
+    @media (max-width: 640px) {
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
 }
 </style>
