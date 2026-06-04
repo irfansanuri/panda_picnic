@@ -157,15 +157,12 @@ onBeforeUnmount(() => {
 .games {
     background: linear-gradient(160deg, #D0EFD0 0%, var(--cream) 50%, var(--sky-pale) 100%);
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden;
+    padding: 90px 0;
+    overflow-x: hidden;
+    overflow-y: visible;
 
     @media (max-width: 900px) {
         min-height: auto;
-        justify-content: flex-start;
-        overflow: visible;
         padding: 72px 0;
     }
 }
