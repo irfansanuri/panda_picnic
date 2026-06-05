@@ -47,7 +47,7 @@ const navItems = [
     { id: 'countdown', label: 'Countdown', icon: '⏳' },
     { id: 'details', label: 'Butiran', icon: '📍' },
     { id: 'attendees', label: 'Tetamu', icon: '👥' },
-    { id: 'bring', label: 'Bawa Apa?', icon: '🎒' },
+    { id: 'bringlist', label: 'Bawa Apa?', icon: '🎒' },
     { id: 'games', label: 'Games', icon: '🎮' },
     { id: 'timeline', label: 'Jadual', icon: '📅' },
 ]
