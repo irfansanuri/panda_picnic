@@ -5,7 +5,7 @@
 //  • Real-time subscription syncs changes from other devices
 // ─────────────────────────────────────────────────────────
 
-import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "src/firebase.js";
 import { lookupGameMeta } from "src/data/gameDictionary.js";
 import { ref } from "vue";
@@ -95,11 +95,45 @@ let unsubscriber = null;
 let stateRef = null;
 
 async function push(fields) {
-  if (!stateRef) return;
+  if (!stateRef) {
+    console.error("🐼 Firestore not ready — write skipped. Data may not persist.");
+    return false;
+  }
+  for (const [key, val] of Object.entries(fields)) {
+    if (val === undefined) {
+      console.error(`🐼 Attempted to write undefined for field "${key}" — write aborted to prevent data loss.`);
+      return false;
+    }
+  }
   try {
     await updateDoc(stateRef, fields);
+    return true;
   } catch (e) {
-    console.error("Firestore write error:", e.message);
+    console.error("🐼 Firestore write error:", e.message);
+    // Retry once after 1s
+    try {
+      await new Promise((r) => setTimeout(r, 1000));
+      await updateDoc(stateRef, fields);
+      console.log("🐼 Firestore write recovered on retry.");
+      return true;
+    } catch (e2) {
+      console.error("🐼 Firestore write failed after retry:", e2.message);
+      return false;
+    }
+  }
+}
+
+// ── Soft-delete helper ────────────────────────────────
+async function softDelete(collectionName, item, extra = {}) {
+  if (!db) return;
+  try {
+    await addDoc(collection(db, collectionName), {
+      ...toPlain(item),
+      ...extra,
+      deletedAt: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error(`🐼 Soft-delete to ${collectionName} failed:`, e.message);
   }
 }
 
@@ -114,9 +148,11 @@ export function addVvip() {
     editing: true,
   });
 }
-export function removeVvip(id) {
+export async function removeVvip(id) {
+  const item = vvip.value.find((p) => p.id === id);
+  if (item) await softDelete('deletedVvip', item);
   vvip.value = vvip.value.filter((p) => p.id !== id);
-  push({ vvip: toPlain(vvip.value) });
+  await push({ vvip: toPlain(vvip.value) });
 }
 export function saveVvip() {
   push({ vvip: toPlain(vvip.value) });
@@ -126,9 +162,11 @@ export function saveVvip() {
 export function addTetamu() {
   tetamu.value.push({ id: Date.now(), name: "", emoji: "😊", editing: true });
 }
-export function removeTetamu(id) {
+export async function removeTetamu(id) {
+  const item = tetamu.value.find((p) => p.id === id);
+  if (item) await softDelete('deletedTetamu', item);
   tetamu.value = tetamu.value.filter((p) => p.id !== id);
-  push({ tetamu: toPlain(tetamu.value) });
+  await push({ tetamu: toPlain(tetamu.value) });
 }
 export function saveTetamu() {
   push({ tetamu: toPlain(tetamu.value) });
@@ -142,11 +180,19 @@ export function addItem(catId) {
     cat.items.push(newItem);
   }
 }
-export function deleteItem(catId, itemId) {
+export async function deleteItem(catId, itemId) {
   const cat = categories.value.find((c) => c.id === catId);
   if (cat) {
+    const item = cat.items.find((i) => i.id === itemId);
+    if (item) {
+      await softDelete('deletedCategoryItems', item, {
+        catId: cat.id,
+        catLabel: cat.label,
+        catIcon: cat.icon || '',
+      });
+    }
     cat.items = cat.items.filter((i) => i.id !== itemId);
-    push({ categories: toPlain(categories.value) });
+    await push({ categories: toPlain(categories.value) });
   }
 }
 export async function saveItem(item) {
@@ -166,9 +212,11 @@ export async function saveItem(item) {
 export function addGame() {
   games.value.push({ id: Date.now(), name: "", editing: true });
 }
-export function removeGame(id) {
+export async function removeGame(id) {
+  const item = games.value.find((g) => g.id === id);
+  if (item) await softDelete('deletedGames', item);
   games.value = games.value.filter((g) => g.id !== id);
-  push({ games: toPlain(games.value) });
+  await push({ games: toPlain(games.value) });
 }
 export function saveGame() {
   push({ games: toPlain(games.value) });
