@@ -5,9 +5,18 @@
 //  • Real-time subscription syncs changes from other devices
 // ─────────────────────────────────────────────────────────
 
-import { addDoc, collection, doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "src/firebase.js";
+import {
+  addDoc,
+  collection,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { lookupGameMeta } from "src/data/gameDictionary.js";
+import { db, isFirebaseConfigured } from "src/firebase.js";
+import { currentUser } from "src/composables/useAuth.js";
 import { ref } from "vue";
 
 const COLLECTION = import.meta.env.VITE_FIRESTORE_COLLECTION;
@@ -96,12 +105,16 @@ let stateRef = null;
 
 async function push(fields) {
   if (!stateRef) {
-    console.error("🐼 Firestore not ready — write skipped. Data may not persist.");
+    console.error(
+      "🐼 Firestore not ready — write skipped. Data may not persist.",
+    );
     return false;
   }
   for (const [key, val] of Object.entries(fields)) {
     if (val === undefined) {
-      console.error(`🐼 Attempted to write undefined for field "${key}" — write aborted to prevent data loss.`);
+      console.error(
+        `🐼 Attempted to write undefined for field "${key}" — write aborted to prevent data loss.`,
+      );
       return false;
     }
   }
@@ -126,18 +139,31 @@ async function push(fields) {
 // ── Soft-delete helper ────────────────────────────────
 async function softDelete(collectionName, item, extra = {}) {
   if (!db) {
-    console.error(`🐼 Soft-delete to ${collectionName} failed: db not available`);
+    console.error(
+      `🐼 Soft-delete to ${collectionName} failed: db not available`,
+    );
     return;
   }
   try {
     const docId = await addDoc(collection(db, collectionName), {
       ...toPlain(item),
       ...extra,
+      deletedBy: currentUser.value ? {
+        uid: currentUser.value.uid,
+        email: currentUser.value.email,
+        displayName: currentUser.value.displayName,
+      } : { uid: "anonymous", email: "anonymous", displayName: "Anonymous" },
       deletedAt: serverTimestamp(),
     });
-    console.log(`🐼 Soft-deleted to ${collectionName}/${docId.id}:`, item.id || item.name);
+    console.log(
+      `🐼 Soft-deleted to ${collectionName}/${docId.id}: ${item.name || item.id} by ${currentUser.value?.displayName || 'anonymous'}`,
+    );
   } catch (e) {
-    console.error(`🐼 Soft-delete to ${collectionName} failed:`, e.code, e.message);
+    console.error(
+      `🐼 Soft-delete to ${collectionName} failed:`,
+      e.code,
+      e.message,
+    );
   }
 }
 
@@ -154,7 +180,7 @@ export function addVvip() {
 }
 export async function removeVvip(id) {
   const item = vvip.value.find((p) => p.id === id);
-  if (item) await softDelete('deletedVvip', item);
+  if (item) await softDelete("deletedVvip", item);
   vvip.value = vvip.value.filter((p) => p.id !== id);
   await push({ vvip: toPlain(vvip.value) });
 }
@@ -168,7 +194,7 @@ export function addTetamu() {
 }
 export async function removeTetamu(id) {
   const item = tetamu.value.find((p) => p.id === id);
-  if (item) await softDelete('deletedTetamu', item);
+  if (item) await softDelete("deletedTetamu", item);
   tetamu.value = tetamu.value.filter((p) => p.id !== id);
   await push({ tetamu: toPlain(tetamu.value) });
 }
@@ -189,10 +215,10 @@ export async function deleteItem(catId, itemId) {
   if (cat) {
     const item = cat.items.find((i) => i.id === itemId);
     if (item) {
-      await softDelete('deletedCategoryItems', item, {
+      await softDelete("deletedCategoryItems", item, {
         catId: cat.id,
         catLabel: cat.label,
-        catIcon: cat.icon || '',
+        catIcon: cat.icon || "",
       });
     }
     cat.items = cat.items.filter((i) => i.id !== itemId);
@@ -218,7 +244,7 @@ export function addGame() {
 }
 export async function removeGame(id) {
   const item = games.value.find((g) => g.id === id);
-  if (item) await softDelete('deletedGames', item);
+  if (item) await softDelete("deletedGames", item);
   games.value = games.value.filter((g) => g.id !== id);
   await push({ games: toPlain(games.value) });
 }
@@ -271,7 +297,9 @@ async function initFirestore() {
     stateRef,
     async (snapshot) => {
       if (!snapshot.exists()) {
-        console.warn('🐼 Firestore doc not found. Not auto-creating to avoid data loss. Run initDoc() to seed fresh data intentionally.');
+        console.warn(
+          "🐼 Firestore doc not found. Not auto-creating to avoid data loss. Run initDoc() to seed fresh data intentionally.",
+        );
         return;
       }
 
@@ -298,14 +326,16 @@ async function initFirestore() {
 // ── Explicit first-time seed (call intentionally, never auto) ──
 export async function initDoc() {
   if (!stateRef) return;
-  const { getDoc } = await import('firebase/firestore');
+  const { getDoc } = await import("firebase/firestore");
   const snap = await getDoc(stateRef);
   if (snap.exists()) {
-    console.warn('🐼 initDoc(): doc already exists, skipping seed to avoid data loss.');
+    console.warn(
+      "🐼 initDoc(): doc already exists, skipping seed to avoid data loss.",
+    );
     return;
   }
   await setDoc(stateRef, emptyState());
-  console.log('🐼 initDoc(): fresh empty doc created.');
+  console.log("🐼 initDoc(): fresh empty doc created.");
 }
 
 // ── Cleanup subscription (call from App.vue onBeforeUnmount) ──
