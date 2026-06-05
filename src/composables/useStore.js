@@ -125,15 +125,19 @@ async function push(fields) {
 
 // ── Soft-delete helper ────────────────────────────────
 async function softDelete(collectionName, item, extra = {}) {
-  if (!db) return;
+  if (!db) {
+    console.error(`🐼 Soft-delete to ${collectionName} failed: db not available`);
+    return;
+  }
   try {
-    await addDoc(collection(db, collectionName), {
+    const docId = await addDoc(collection(db, collectionName), {
       ...toPlain(item),
       ...extra,
       deletedAt: serverTimestamp(),
     });
+    console.log(`🐼 Soft-deleted to ${collectionName}/${docId.id}:`, item.id || item.name);
   } catch (e) {
-    console.error(`🐼 Soft-delete to ${collectionName} failed:`, e.message);
+    console.error(`🐼 Soft-delete to ${collectionName} failed:`, e.code, e.message);
   }
 }
 
@@ -154,8 +158,8 @@ export async function removeVvip(id) {
   vvip.value = vvip.value.filter((p) => p.id !== id);
   await push({ vvip: toPlain(vvip.value) });
 }
-export function saveVvip() {
-  push({ vvip: toPlain(vvip.value) });
+export async function saveVvip() {
+  await push({ vvip: toPlain(vvip.value) });
 }
 
 // ── Tetamu CRUD ────────────────────────────────────────
@@ -168,8 +172,8 @@ export async function removeTetamu(id) {
   tetamu.value = tetamu.value.filter((p) => p.id !== id);
   await push({ tetamu: toPlain(tetamu.value) });
 }
-export function saveTetamu() {
-  push({ tetamu: toPlain(tetamu.value) });
+export async function saveTetamu() {
+  await push({ tetamu: toPlain(tetamu.value) });
 }
 
 // ── Bring List CRUD ────────────────────────────────────
@@ -205,7 +209,7 @@ export async function saveItem(item) {
     Object.assign(item, normalizeGameItem(item));
   }
 
-  push({ categories: toPlain(categories.value) });
+  await push({ categories: toPlain(categories.value) });
 }
 
 // ── Games CRUD ─────────────────────────────────────────
@@ -218,8 +222,8 @@ export async function removeGame(id) {
   games.value = games.value.filter((g) => g.id !== id);
   await push({ games: toPlain(games.value) });
 }
-export function saveGame() {
-  push({ games: toPlain(games.value) });
+export async function saveGame() {
+  await push({ games: toPlain(games.value) });
 }
 
 // ── allPeople ──────────────────────────────────────────
