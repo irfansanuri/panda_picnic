@@ -31,9 +31,13 @@ const loginError = ref('');
 async function handleLogin() {
   isLoggingIn.value = true;
   loginError.value = '';
-  const success = await loginWithGoogle();
-  if (!success) {
-    loginError.value = 'Login failed. Make sure you use @pandasoftware.my email.';
+  try {
+    const success = await loginWithGoogle();
+    if (!success) {
+      loginError.value = 'Login failed. Please try again.';
+    }
+  } catch (e) {
+    loginError.value = e.message || 'Login error. Only @pandasoftware.my emails are allowed.';
   }
   isLoggingIn.value = false;
 }

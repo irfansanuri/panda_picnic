@@ -20,16 +20,21 @@ async function loginWithGoogle() {
 
   try {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
+    // Force account selection/login every time
+    provider.setCustomParameters({ 
+      prompt: "select_account"
+    });
     const result = await signInWithPopup(auth, provider);
     
     const email = result.user.email || "";
     const domain = email.split("@")[1];
     
+    console.log(`🐼 Login attempt with: ${email}`);
+    
     if (domain !== ALLOWED_DOMAIN) {
       console.warn(`🐼 Login blocked: ${email} not in @${ALLOWED_DOMAIN} domain`);
       await signOut(auth);
-      throw new Error(`Only @${ALLOWED_DOMAIN} emails allowed`);
+      throw new Error(`Only @${ALLOWED_DOMAIN} emails allowed. You tried: ${email}`);
     }
     
     currentUser.value = {
@@ -45,7 +50,7 @@ async function loginWithGoogle() {
     console.error("🐼 Login error:", e.message);
     isAuthenticated.value = false;
     currentUser.value = null;
-    return false;
+    throw e;  // Re-throw so UI can show the error
   }
 }
 
