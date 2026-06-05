@@ -219,7 +219,7 @@ async function initFirestore() {
     stateRef,
     async (snapshot) => {
       if (!snapshot.exists()) {
-        await setDoc(stateRef, emptyState());
+        console.warn('🐼 Firestore doc not found. Not auto-creating to avoid data loss. Run initDoc() to seed fresh data intentionally.');
         return;
       }
 
@@ -241,6 +241,19 @@ async function initFirestore() {
   );
 
   console.log("🐼 Firestore sync live!");
+}
+
+// ── Explicit first-time seed (call intentionally, never auto) ──
+export async function initDoc() {
+  if (!stateRef) return;
+  const { getDoc } = await import('firebase/firestore');
+  const snap = await getDoc(stateRef);
+  if (snap.exists()) {
+    console.warn('🐼 initDoc(): doc already exists, skipping seed to avoid data loss.');
+    return;
+  }
+  await setDoc(stateRef, emptyState());
+  console.log('🐼 initDoc(): fresh empty doc created.');
 }
 
 // ── Cleanup subscription (call from App.vue onBeforeUnmount) ──
