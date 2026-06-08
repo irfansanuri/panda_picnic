@@ -1,10 +1,12 @@
 <template>
   <div class="themed-loading" role="status" aria-live="polite" aria-label="Loading">
     <div class="themed-loading__image-wrap" :style="{ '--fill-progress': fillRatio }" aria-hidden="true">
-      <svg class="themed-loading__icon themed-loading__icon--silhouette" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <svg class="themed-loading__icon themed-loading__icon--silhouette" viewBox="0 0 220 220"
+        xmlns="http://www.w3.org/2000/svg">
         <circle cx="110" cy="110" r="102" />
         <path d="M52 150c16-20 44-31 78-31 34 0 62 11 78 31v34H52z" />
-        <path d="M106 122c-10-18-5-34 12-50 11-10 24-17 38-21-6 9-11 19-13 31 14-10 30-15 47-17-7 8-15 16-23 23 18-4 35-3 50 4-16 4-30 10-43 20-18 14-34 20-48 20-9 0-16-3-20-10z" />
+        <path
+          d="M106 122c-10-18-5-34 12-50 11-10 24-17 38-21-6 9-11 19-13 31 14-10 30-15 47-17-7 8-15 16-23 23 18-4 35-3 50 4-16 4-30 10-43 20-18 14-34 20-48 20-9 0-16-3-20-10z" />
         <ellipse cx="88" cy="166" rx="24" ry="11" />
         <rect x="80" y="116" width="16" height="50" rx="8" />
         <path d="M88 114c-9-10-18-14-28-14 7 6 12 13 15 21" />
@@ -13,7 +15,8 @@
       </svg>
 
       <div class="themed-loading__icon-color-layer">
-        <svg class="themed-loading__icon themed-loading__icon--color" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+        <svg class="themed-loading__icon themed-loading__icon--color" viewBox="0 0 220 220"
+          xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="seaGrad" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stop-color="#8fd8f5" />
@@ -34,12 +37,17 @@
           </defs>
           <circle cx="110" cy="110" r="102" fill="url(#seaGrad)" />
           <path d="M52 150c16-20 44-31 78-31 34 0 62 11 78 31v34H52z" fill="url(#sandGrad)" />
-          <path d="M106 122c-10-18-5-34 12-50 11-10 24-17 38-21-6 9-11 19-13 31 14-10 30-15 47-17-7 8-15 16-23 23 18-4 35-3 50 4-16 4-30 10-43 20-18 14-34 20-48 20-9 0-16-3-20-10z" fill="#fff6df" />
+          <path
+            d="M106 122c-10-18-5-34 12-50 11-10 24-17 38-21-6 9-11 19-13 31 14-10 30-15 47-17-7 8-15 16-23 23 18-4 35-3 50 4-16 4-30 10-43 20-18 14-34 20-48 20-9 0-16-3-20-10z"
+            fill="#fff6df" />
           <ellipse cx="88" cy="166" rx="24" ry="11" fill="#f3cf8d" />
           <rect x="80" y="116" width="16" height="50" rx="8" fill="url(#trunkGrad)" />
-          <path d="M88 114c-9-10-18-14-28-14 7 6 12 13 15 21" fill="none" stroke="url(#leafGrad)" stroke-width="8" stroke-linecap="round" />
-          <path d="M88 116c-3-14-2-24 2-33 5 10 7 19 7 29" fill="none" stroke="url(#leafGrad)" stroke-width="8" stroke-linecap="round" />
-          <path d="M90 118c8-11 18-17 31-17-8 7-14 15-18 24" fill="none" stroke="url(#leafGrad)" stroke-width="8" stroke-linecap="round" />
+          <path d="M88 114c-9-10-18-14-28-14 7 6 12 13 15 21" fill="none" stroke="url(#leafGrad)" stroke-width="8"
+            stroke-linecap="round" />
+          <path d="M88 116c-3-14-2-24 2-33 5 10 7 19 7 29" fill="none" stroke="url(#leafGrad)" stroke-width="8"
+            stroke-linecap="round" />
+          <path d="M90 118c8-11 18-17 31-17-8 7-14 15-18 24" fill="none" stroke="url(#leafGrad)" stroke-width="8"
+            stroke-linecap="round" />
         </svg>
       </div>
 
@@ -143,6 +151,7 @@ const fillRatio = computed(() => `${clampedProgress.value}%`)
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .themed-loading__icon-color-layer,
   .themed-loading__fill-edge {
     transition: none;

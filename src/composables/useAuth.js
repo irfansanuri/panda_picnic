@@ -3,9 +3,9 @@
 //  Session persists via Firebase + localStorage backup
 // ─────────────────────────────────────────────────────────
 
-import { GoogleAuthProvider, onAuthStateChanged, setPersistence, browserLocalPersistence, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, onIdTokenChanged, setPersistence, browserLocalPersistence, signInWithPopup, signOut } from "firebase/auth";
 import { ref } from "vue";
-import { auth } from "src/firebase.js";
+import { auth, isFirebaseConfigured } from "src/firebase.js";
 
 const ALLOWED_DOMAIN = "pandasoftware.my";
 
@@ -14,23 +14,44 @@ export const isAuthenticated = ref(false);
 export const authLoading = ref(true);
 
 // Enable session persistence (survives page refresh)
-if (auth) {
-  setPersistence(auth, browserLocalPersistence).catch(e => {
-    console.warn("🐼 Failed to enable session persistence:", e.message);
-  });
+const persistenceReady = auth
+  ? setPersistence(auth, browserLocalPersistence).catch((e) => {
+      console.warn("🐼 Failed to enable session persistence:", e.message);
+    })
+  : Promise.resolve();
+
+function mapAuthError(error) {
+  const code = error?.code || "";
+
+  if (code === "auth/configuration-not-found") {
+    return "Firebase Authentication is not configured for this project. In Firebase Console, open Authentication > Sign-in method, enable Google provider, and verify the project uses the same Web App config as this app.";
+  }
+  if (code === "auth/unauthorized-domain") {
+    return "This domain is not authorized in Firebase Auth. Add your host (for local dev: localhost) in Authentication > Settings > Authorized domains.";
+  }
+  if (code === "auth/popup-blocked") {
+    return "Popup was blocked by your browser. Please allow popups for this site and try again.";
+  }
+  if (code === "auth/popup-closed-by-user") {
+    return "Login popup was closed before sign-in completed. Please try again.";
+  }
+
+  return error?.message || "Login failed. Please try again.";
 }
 
 async function loginWithGoogle() {
-  if (!auth) {
-    console.error("🐼 Firebase Auth not configured");
-    return false;
+  if (!isFirebaseConfigured || !auth) {
+    throw new Error("Firebase is not fully configured. Please set VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, and VITE_FIREBASE_APP_ID in your .env file.");
   }
 
   try {
+    await persistenceReady;
+
     const provider = new GoogleAuthProvider();
     // Force account selection/login every time
     provider.setCustomParameters({ 
-      prompt: "select_account"
+      prompt: "select_account",
+      hd: ALLOWED_DOMAIN,
     });
     const result = await signInWithPopup(auth, provider);
     
@@ -60,10 +81,11 @@ async function loginWithGoogle() {
     console.log(`🐼 Session persists — close and reopen, you'll stay logged in. Token auto-refreshes.`);
     return true;
   } catch (e) {
-    console.error("🐼 Login error:", e.message);
+    const friendlyMessage = mapAuthError(e);
+    console.error("🐼 Login error:", e?.code || e?.message || e);
     isAuthenticated.value = false;
     currentUser.value = null;
-    throw e;  // Re-throw so UI can show the error
+    throw new Error(friendlyMessage);
   }
 }
 
@@ -85,13 +107,13 @@ export function initAuth() {
     return;
   }
 
-  onAuthStateChanged(auth, async (user) => {
+  onIdTokenChanged(auth, async (user) => {
     try {
       if (user) {
         const domain = user.email?.split("@")[1];
         if (domain === ALLOWED_DOMAIN) {
-          // Force token refresh to ensure it's valid
-          const token = await user.getIdToken(true);
+          // onIdTokenChanged runs on sign-in, token refresh, and sign-out.
+          const token = await user.getIdToken();
           console.log(`🐼 Session restored: ${user.displayName} (${user.email})`);
           
           currentUser.value = {

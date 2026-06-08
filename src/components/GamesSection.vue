@@ -10,16 +10,23 @@
 
             <div class="games__grid" ref="gridRef">
                 <div v-for="game in gamesList" :key="game.id" class="games__card tropical-card"
-                    :class="'card-type--' + game.type" :ref="el => { if (el) cardRefs[game.id] = el }"
+                    :class="'card-type--' + classify(game.name).type" :ref="el => { if (el) cardRefs[game.id] = el }"
                     @mousemove="tilt($event, game.id)" @mouseleave="untilt(game.id)">
-                    <div class="games__card-icon">{{ game.emoji }}</div>
+                    <div class="games__card-icon">{{ classify(game.name).icon }}</div>
 
-                    <div class="games__card-name">{{ game.name }}</div>
-                    <div class="games__card-desc">{{ game.description }}</div>
-
-                    <div class="games__card-tag" :class="'tag--' + game.type">
-                        {{ game.typeLabel }}
+                    <input v-if="game.editing" class="games__edit-input" v-model="game.name"
+                        placeholder="Nama aktiviti..." @keyup.enter="game.editing = false; saveGame()"
+                        @blur="game.editing = false; saveGame()" autofocus />
+                    <div v-else class="games__card-name">
+                        {{ game.name }}
                     </div>
+
+                    <div class="games__card-tag" :class="'tag--' + classify(game.name).type">
+                        {{ classify(game.name).typeLabel }}
+                    </div>
+
+                    <button v-if="game.editing" class="games__remove" @click="removeGame(game.id)"
+                        title="Buang">✕</button>
                     <div class="games__card-glow"></div>
                 </div>
             </div>
@@ -30,8 +37,8 @@
 <script setup>
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { categories } from 'src/composables/useStore.js'
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { games as gamesList, removeGame, saveGame } from 'src/composables/useStore.js'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 gsap.registerPlugin(ScrollTrigger)
 
 const sectionRef = ref(null)
@@ -39,21 +46,36 @@ const headerRef = ref(null)
 const gridRef = ref(null)
 const cardRefs = reactive({})
 
-const gamesList = computed(() => {
-    const gamesCat = categories.value.find(cat => cat.id === 'games' || /permainan/i.test(cat.label || ''))
-    if (!gamesCat?.items?.length) return []
+// ── Auto-classify game name → icon + category ──────────
+function classify(name = '') {
+    const n = (name || '').toLowerCase()
 
-    return gamesCat.items
-        .filter(item => String(item.name || '').trim())
-        .map(item => ({
-            id: item.id,
-            name: String(item.name).trim(),
-            emoji: item.emoji,
-            description: item.description,
-            type: item.type,
-            typeLabel: item.typeLabel,
-        }))
-})
+    // KAD
+    if (/uno|kad\b|kartu|card|skip.?bo|exploding|snap|poker|rummy/.test(n))
+        return { type: 'card', typeLabel: 'Kad', icon: '🃏' }
+
+    // BOARD
+    if (/monopoly/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '🎲' }
+    if (/saidina/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '🏙️' }
+    if (/chess|catur/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '♟️' }
+    if (/scrabble/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '🔡' }
+    if (/ludo|dam|papan|board/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '🎲' }
+    if (/strategi|strategy/.test(n)) return { type: 'board', typeLabel: 'Board', icon: '🧩' }
+
+    // LUAR
+    if (/berenang|renang|swim/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🏊' }
+    if (/mancing|pancing|ikan|kail/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🎣' }
+    if (/hiking|mendaki|hike/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🥾' }
+    if (/baling|selipar/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '👟' }
+    if (/badminton/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🏸' }
+    if (/bola|football|soccer/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '⚽' }
+    if (/frisbee/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🥏' }
+    if (/volleyball|tampar/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🏐' }
+    if (/lari|run|jog/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🏃' }
+    if (/basikal|bicycle|bike/.test(n)) return { type: 'outdoor', typeLabel: 'Luar', icon: '🚴' }
+
+    return { type: 'outdoor', typeLabel: 'Luar', icon: '🎯' }
+}
 
 function tilt(e, id) {
     const card = cardRefs[id]; if (!card) return
@@ -90,9 +112,12 @@ function initAnimations() {
     const tl = gsap.timeline({
         scrollTrigger: {
             trigger: sectionRef.value,
-            start: 'top 75%',
-            end: 'bottom 30%',
-            toggleActions: 'play none none reverse',
+            pin: true,
+            scrub: 0.9,
+            start: 'top top', end: '+=1200',
+            anticipatePin: 1,
+            fastScrollEnd: true,
+            invalidateOnRefresh: true,
             onLeave: () => iconFloatTween?.pause(),
             onEnterBack: () => iconFloatTween?.resume(),
             onUpdate: (st) => {
@@ -129,22 +154,30 @@ function initAnimations() {
             duration: 0.26,
             ease: 'back.out(2)',
         }, 0.1)
+
+    // HOLD
+    tl.to({}, { duration: 0.32 })
+
+    // EXIT: cards explode outward into the void
+    tl
+        .to(cards, {
+            x: () => gsap.utils.random(-500, 500),
+            y: () => gsap.utils.random(-380, 380),
+            rotation: () => gsap.utils.random(-300, 300),
+            scale: 0,
+            opacity: 0,
+            stagger: { each: 0.025, from: 'random' },
+            duration: 0.3,
+        }, 0.72)
+        .to(headerRef.value, { opacity: 0, y: -70, duration: 0.2 }, 0.72)
 }
 
 onMounted(() => {
     nextTick(initAnimations)
 })
 
-watch(gamesList, async () => {
-    await nextTick()
-    if (!animInited) {
-        initAnimations()
-        return
-    }
-
-    const cards = Object.values(cardRefs)
-    gsap.set(cards, { opacity: 1, scale: 1, rotation: 0, z: 0 })
-}, { deep: true })
+// Fallback: if cards weren't rendered yet (PocketBase still loading), init when data arrives
+watch(gamesList, () => { nextTick(initAnimations) }, { once: true })
 
 onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
 onBeforeUnmount(() => {
@@ -157,23 +190,15 @@ onBeforeUnmount(() => {
 .games {
     background: linear-gradient(160deg, #D0EFD0 0%, var(--cream) 50%, var(--sky-pale) 100%);
     min-height: 100vh;
-    padding: 90px 0;
-    overflow-x: hidden;
-    overflow-y: visible;
-
-    @media (max-width: 900px) {
-        min-height: auto;
-        padding: 72px 0;
-    }
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .games__header {
     margin-bottom: 50px;
     opacity: 0;
-
-    @media (max-width: 900px) {
-        margin-bottom: 30px;
-    }
 }
 
 .games__grid {
@@ -187,8 +212,7 @@ onBeforeUnmount(() => {
     }
 
     @media (max-width: 500px) {
-        grid-template-columns: 1fr;
-        gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -201,11 +225,6 @@ onBeforeUnmount(() => {
     transition: box-shadow 0.3s;
     cursor: pointer;
     opacity: 0;
-
-    @media (max-width: 900px) {
-        opacity: 1;
-        padding: 24px 16px 20px;
-    }
 
     // Type-specific backgrounds — clear contrast for navy text
     &.card-type--card {
@@ -265,17 +284,6 @@ onBeforeUnmount(() => {
     &:hover {
         color: var(--rust);
     }
-}
-
-.games__card-desc {
-    font-family: var(--font-body);
-    font-size: 0.75rem;
-    color: var(--text-light);
-    line-height: 1.45;
-    margin: 0 auto 10px;
-    max-width: 220px;
-    position: relative;
-    z-index: 1;
 }
 
 .games__edit-input {

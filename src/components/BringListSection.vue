@@ -5,7 +5,7 @@
                 <span class="section-label">🎒 Senarai Bawa</span>
                 <h2 class="section-title">Siapa Bawa Apa? 🧺</h2>
                 <div class="wave-divider wave-divider-center"></div>
-                <p class="section-subtitle">Klik nama untuk edit, pilih siapa yang bertanggungjawab</p>
+                <p class="section-subtitle">Klik nama untuk edit, pilih siapa yang bertanggungjawab (boleh lebih dari seorang)</p>
             </div>
 
             <!-- Category tabs -->
@@ -32,35 +32,57 @@
                     </div>
                 </div>
 
-                <!-- Items -->
-                <transition-group name="list-fade" tag="div" class="bringlist__list">
-                    <div v-for="item in cat.items" :key="item.id" class="bringlist__item tropical-card">
-                        <!-- Name (editable) -->
-                        <div class="bringlist__item-name-wrap">
-                            <input v-if="item.editing" v-model="item.name" class="bringlist__item-input"
-                                @keyup.enter="confirmEdit(item)" @blur="confirmEdit(item)" autofocus />
-                            <span v-else class="bringlist__item-name" @click="item.editing = true">
-                                {{ item.name }}
-                            </span>
+                <!-- Items (Draggable) -->
+                <div class="bringlist__list" @drop="onDrop(cat.id, $event)" @dragover.prevent
+                    @dragenter.prevent>
+                    <transition-group name="list-fade" tag="div" class="bringlist__list-inner">
+                        <div v-for="(item, index) in cat.items" :key="item.id" class="bringlist__item tropical-card"
+                            :data-item-id="item.id"
+                            draggable="true" @dragstart="onDragStart(cat.id, index, $event)"
+                            @dragend="onDragEnd" @dragover.prevent @dragenter.prevent
+                            :class="{ 'bringlist__item--dragging': dragState.dragging && dragState.catId === cat.id && dragState.itemId === item.id }">
+
+                            <div class="bringlist__item-main">
+                                <!-- Drag handle (subtle) -->
+                                <div class="bringlist__drag-handle" :title="dragState.dragging ? 'Angkat item ini' : 'Tekan dan seret untuk susun'">
+                                    ≡
+                                </div>
+
+                                <!-- Name (editable) -->
+                                <div class="bringlist__item-name-wrap">
+                                    <input v-if="item.editing" v-model="item.name" class="bringlist__item-input"
+                                        @keyup.enter="confirmEdit(item)" @blur="confirmEdit(item)" autofocus />
+                                    <span v-else class="bringlist__item-name" @click="item.editing = true">
+                                        {{ item.name }}
+                                    </span>
+                                </div>
+
+                                <div class="bringlist__item-actions">
+                                    <!-- Dropdown for selecting people -->
+                                    <select class="bringlist__item-select"
+                                        @change="e => { if (e.target.value) { addPerson(item, e.target.value); e.target.value = '' } }">
+                                        <option value="">— Pilih —</option>
+                                        <option v-for="p in availablePeople(item)" :key="p" :value="p">{{ p }}</option>
+                                    </select>
+
+                                    <!-- Delete -->
+                                    <button class="bringlist__delete" @click="deleteItem(cat.id, item.id)"
+                                        title="Padam">🗑️</button>
+                                </div>
+                            </div>
+
+                            <!-- Assigned people chips (separate row) -->
+                            <div v-if="(item.people || []).length > 0" class="bringlist__people-chips">
+                                <div v-for="person in item.people" :key="person" class="bringlist__person-chip"
+                                    :class="personClass(person)">
+                                    {{ personEmoji(person) }} {{ person }}
+                                    <button class="bringlist__person-remove" @click.stop="removePerson(item, person)"
+                                        title="Buang">✕</button>
+                                </div>
+                            </div>
                         </div>
-
-                        <!-- Assigned person dropdown -->
-                        <select class="bringlist__item-select" :value="item.person"
-                            @change="e => { item.person = e.target.value; saveItem(item) }">
-                            <option value="">— Pilih —</option>
-                            <option v-for="p in allPeople()" :key="p" :value="p">{{ p }}</option>
-                        </select>
-
-                        <!-- Person chip -->
-                        <div v-if="item.person" class="bringlist__person-chip" :class="personClass(item.person)">
-                            {{ personEmoji(item.person) }} {{ item.person }}
-                        </div>
-
-                        <!-- Delete -->
-                        <button class="bringlist__delete" @click="deleteItem(cat.id, item.id)"
-                            title="Padam">🗑️</button>
-                    </div>
-                </transition-group>
+                    </transition-group>
+                </div>
 
                 <!-- Add item -->
                 <button class="bringlist__add btn-tropical" @click="addItem(cat.id)">
@@ -74,7 +96,7 @@
 <script setup>
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { addItem, allPeople, categories, deleteItem, saveItem } from 'src/composables/useStore.js'
+import { addItem, allPeople, categories, deleteItem, reorderItems, saveItem } from 'src/composables/useStore.js'
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 
 const sectionRef = ref(null)
@@ -82,13 +104,22 @@ const headerRef = ref(null)
 const panelRefs = reactive({})
 const activeTab = ref('basic')
 
+const dragState = reactive({
+    dragging: false,
+    catId: null,
+    itemId: null,
+    fromIndex: null,
+})
+
 function assignedCount(cat) {
-    return cat.items.filter(i => i.person).length
+    return cat.items.filter(i => i.people && Array.isArray(i.people) && i.people.length > 0).length
 }
+
 function progressPct(cat) {
     if (!cat.items.length) return 0
     return (assignedCount(cat) / cat.items.length) * 100
 }
+
 function confirmEdit(item) {
     item.editing = false
     saveItem(item)
@@ -100,14 +131,76 @@ const PERSON_COLORS = {
     'Luqman': 'chip--luqman',
     'Aisyah': 'chip--aisyah',
 }
+
 const PERSON_EMOJIS = {
     'Fathur': '👑',
     'Dato\' Haikal': '🎩',
     'Luqman': '🎯',
     'Aisyah': '🌸',
 }
+
 function personClass(name) { return PERSON_COLORS[name] || 'chip--default' }
 function personEmoji(name) { return PERSON_EMOJIS[name] || '😊' }
+
+function availablePeople(item) {
+    // Show only people not already assigned to this item
+    const assignedPeople = item.people || []
+    return allPeople().filter(p => !assignedPeople.includes(p))
+}
+
+function addPerson(item, person) {
+    if (!item.people) {
+        item.people = []
+    }
+    if (person && !item.people.includes(person)) {
+        item.people.push(person)
+        saveItem(item)
+    }
+}
+
+function removePerson(item, person) {
+    if (!item.people) return
+    item.people = item.people.filter(p => p !== person)
+    saveItem(item)
+}
+
+// Drag and drop handlers
+function onDragStart(catId, index, event) {
+    dragState.dragging = true
+    dragState.catId = catId
+    dragState.fromIndex = index
+    dragState.itemId = categories.value.find(c => c.id === catId)?.items[index]?.id
+
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/html', event.target.innerHTML)
+}
+
+function onDragEnd(event) {
+    dragState.dragging = false
+}
+
+function onDrop(catId, event) {
+    event.preventDefault()
+    if (dragState.catId !== catId || dragState.fromIndex === null) return
+
+    const cat = categories.value.find(c => c.id === catId)
+    if (!cat) return
+
+    const dropTarget = event.target.closest('.bringlist__item')
+    if (!dropTarget) return
+
+    const targetItemId = parseInt(dropTarget.dataset.itemId)
+    const toIndex = cat.items.findIndex(item => item.id === targetItemId)
+    if (toIndex === -1) return
+
+    // Reorder items
+    const items = cat.items
+    const [movedItem] = items.splice(dragState.fromIndex, 1)
+    items.splice(toIndex, 0, movedItem)
+
+    reorderItems(catId, items)
+    dragState.fromIndex = null
+}
 
 onMounted(() => {
     ScrollTrigger.create({
@@ -212,18 +305,59 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
 }
 
 .bringlist__list {
+    margin-bottom: 20px;
+    min-height: 60px;
+    background: transparent;
+}
+
+.bringlist__list-inner {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-bottom: 20px;
+    padding: 10px;
 }
 
 .bringlist__item {
     display: flex;
-    align-items: center;
-    gap: 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
     padding: 14px 18px;
-    flex-wrap: wrap;
+    cursor: grab;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &--dragging {
+        opacity: 0.6;
+        transform: scale(0.95);
+        border-color: var(--sky);
+        background: rgba(91, 191, 232, 0.1);
+    }
+}
+
+.bringlist__item-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bringlist__drag-handle {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    color: var(--text-light);
+    opacity: 0;
+    transition: opacity 0.2s;
+    user-select: none;
+    cursor: grab;
+    letter-spacing: 2px;
+
+    .bringlist__item:hover & {
+        opacity: 0.5;
+    }
 }
 
 .bringlist__item-name-wrap {
@@ -257,31 +391,38 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     width: 100%;
 }
 
-.bringlist__item-select {
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: var(--text-mid);
-    border: 2px solid rgba(91, 191, 232, 0.3);
-    border-radius: var(--radius-sm);
-    padding: 6px 12px;
-    background: white;
-    cursor: pointer;
-    outline: none;
-    max-width: 160px;
+.bringlist__item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
 
-    &:focus {
-        border-color: var(--sky);
-    }
+.bringlist__people-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-left: 22px;
 }
 
 .bringlist__person-chip {
-    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
     border-radius: 50px;
     font-family: var(--font-body);
     font-size: 0.75rem;
     font-weight: 800;
     white-space: nowrap;
+    position: relative;
+    transition: all 0.2s;
+
+    &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
 
     &.chip--fathur {
         background: #FFF0D0;
@@ -314,6 +455,48 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     }
 }
 
+.bringlist__person-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.65rem;
+    padding: 0 2px;
+    color: inherit;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    margin-left: 2px;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.bringlist__item-select {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-mid);
+    border: 2px solid rgba(91, 191, 232, 0.3);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    background: white;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    min-width: 130px;
+
+    &:hover {
+        border-color: var(--sky);
+        background: var(--sky-pale);
+    }
+
+    &:focus {
+        border-color: var(--sky);
+        box-shadow: 0 0 0 3px rgba(91, 191, 232, 0.2);
+    }
+}
+
 .bringlist__delete {
     background: none;
     border: none;
@@ -321,8 +504,9 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
     font-size: 1rem;
     padding: 6px;
     border-radius: 50%;
-    opacity: 0;
+    opacity: 0.75;
     transition: opacity 0.2s, background 0.2s;
+    flex-shrink: 0;
 
     .bringlist__item:hover & {
         opacity: 1;
@@ -363,5 +547,53 @@ onBeforeUnmount(() => ScrollTrigger.getAll().forEach(st => st.kill()))
 .list-fade-leave-to {
     opacity: 0;
     transform: translateX(-30px);
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .bringlist__item {
+        gap: 8px;
+        padding: 12px 14px;
+    }
+
+    .bringlist__item-main {
+        display: grid;
+        grid-template-columns: 16px 1fr;
+        grid-template-areas:
+            'drag name'
+            'actions actions';
+        row-gap: 8px;
+        column-gap: 8px;
+    }
+
+    .bringlist__drag-handle {
+        grid-area: drag;
+        opacity: 0.5;
+        align-self: center;
+    }
+
+    .bringlist__item-name-wrap {
+        grid-area: name;
+        min-width: 0;
+    }
+
+    .bringlist__item-actions {
+        grid-area: actions;
+        justify-content: flex-end;
+        width: 100%;
+    }
+
+    .bringlist__person-chip {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+
+    .bringlist__people-chips {
+        margin-left: 0;
+    }
+
+    .bringlist__item-select {
+        min-width: 120px;
+    }
 }
 </style>

@@ -28,6 +28,12 @@ import { ref } from 'vue';
 const isLoggingIn = ref(false);
 const loginError = ref('');
 
+const firebaseSetupHint = [
+  'Firebase Console -> Authentication -> Sign-in method -> enable Google',
+  'Authentication -> Settings -> Authorized domains -> add localhost',
+  'Use matching VITE_FIREBASE_* values for the same Firebase project',
+].join(' | ');
+
 async function handleLogin() {
   isLoggingIn.value = true;
   loginError.value = '';
@@ -37,7 +43,12 @@ async function handleLogin() {
       loginError.value = 'Login failed. Please try again.';
     }
   } catch (e) {
-    loginError.value = e.message || 'Login error. Only @pandasoftware.my emails are allowed.';
+    const message = e?.message || 'Login error. Only @pandasoftware.my emails are allowed.';
+    if (message.toLowerCase().includes('authentication is not configured')) {
+      loginError.value = `${message} Fix: ${firebaseSetupHint}`;
+    } else {
+      loginError.value = message;
+    }
   }
   isLoggingIn.value = false;
 }

@@ -75,24 +75,54 @@ function hasMetadata(item = {}) {
   return !!(item.emoji && item.description && item.type && item.typeLabel);
 }
 
+function normalizeBringListItem(item = {}) {
+  // Migrate old single-person format to multi-person format
+  if (item.person !== undefined && !Array.isArray(item.people)) {
+    if (!item.people) {
+      item.people = item.person ? [item.person] : [];
+      delete item.person;
+    }
+  }
+  // Ensure people field exists
+  if (!Array.isArray(item.people)) {
+    item.people = [];
+  }
+  return item;
+}
+
 function normalizeCategories(list = []) {
   let changed = false;
 
   const normalized = list.map((cat) => {
-    if (!isGamesCategory(cat)) return cat;
-
-    const items = (cat.items || []).map((item) => {
-      if (hasMetadata(item)) return item;
-
-      const next = normalizeGameItem(item);
-      if (!hasSameGameMeta(item, next)) changed = true;
-      return next;
+    let items = (cat.items || []).map((item) => {
+      if (isGamesCategory(cat)) {
+        // Games category: normalize game metadata
+        if (hasMetadata(item)) return item;
+        const next = normalizeGameItem(item);
+        if (!hasSameGameMeta(item, next)) changed = true;
+        return next;
+      } else {
+        // Bring list category: migrate person→people if needed
+        normalizeBringListItem(item);
+        return item;
+      }
     });
 
     return { ...cat, items };
   });
 
   return { normalized, changed };
+}
+
+function deriveGamesFromCategories(list = []) {
+  const gamesCat = list.find((cat) => isGamesCategory(cat));
+  if (!gamesCat?.items?.length) return [];
+
+  return gamesCat.items.map((item) => ({
+    id: item.id,
+    name: item.name || "",
+    editing: false,
+  }));
 }
 
 export const vvip = ref([]);
@@ -206,8 +236,29 @@ export async function saveTetamu() {
 export function addItem(catId) {
   const cat = categories.value.find((c) => c.id === catId);
   if (cat) {
-    const newItem = { id: Date.now(), name: "", person: null, editing: true };
+    const newItem = { id: Date.now(), name: "", people: [], editing: true };
     cat.items.push(newItem);
+
+    if (isGamesCategory(cat)) {
+      games.value = deriveGamesFromCategories(categories.value);
+    }
+  }
+}
+export async function reorderItems(catId, newOrder) {
+  const cat = categories.value.find((c) => c.id === catId);
+  if (cat) {
+    cat.items = newOrder;
+
+    if (isGamesCategory(cat)) {
+      games.value = deriveGamesFromCategories(categories.value);
+      await push({
+        categories: toPlain(categories.value),
+        games: toPlain(games.value),
+      });
+      return;
+    }
+
+    await push({ categories: toPlain(categories.value) });
   }
 }
 export async function deleteItem(catId, itemId) {
@@ -222,6 +273,16 @@ export async function deleteItem(catId, itemId) {
       });
     }
     cat.items = cat.items.filter((i) => i.id !== itemId);
+
+    if (isGamesCategory(cat)) {
+      games.value = deriveGamesFromCategories(categories.value);
+      await push({
+        categories: toPlain(categories.value),
+        games: toPlain(games.value),
+      });
+      return;
+    }
+
     await push({ categories: toPlain(categories.value) });
   }
 }
@@ -233,6 +294,12 @@ export async function saveItem(item) {
   );
   if (isGamesCategory(parentCat)) {
     Object.assign(item, normalizeGameItem(item));
+    games.value = deriveGamesFromCategories(categories.value);
+    await push({
+      categories: toPlain(categories.value),
+      games: toPlain(games.value),
+    });
+    return;
   }
 
   await push({ categories: toPlain(categories.value) });
@@ -313,7 +380,18 @@ async function initFirestore() {
           await updateDoc(stateRef, { categories: toPlain(normalized) });
         }
       }
-      if (Array.isArray(data.games)) games.value = data.games;
+
+      if (Array.isArray(data.games) && data.games.length > 0) {
+        games.value = data.games;
+      } else {
+        const fallbackGames = deriveGamesFromCategories(categories.value);
+        games.value = fallbackGames;
+
+        // Heal state when games array is missing but categories already contain Permainan items
+        if (fallbackGames.length > 0) {
+          await updateDoc(stateRef, { games: toPlain(fallbackGames) });
+        }
+      }
     },
     (e) => {
       console.warn("🐼 Firestore unavailable:", e.message);

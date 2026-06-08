@@ -7,11 +7,11 @@
 </template>
 
 <script setup>
-import { cleanupSubscription } from 'src/composables/useStore.js';
-import { initAuth, isAuthenticated, authLoading } from 'src/composables/useAuth.js';
 import ThemedLoading from 'src/components/ThemedLoading.vue';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { authLoading, initAuth, isAuthenticated } from 'src/composables/useAuth.js';
+import { cleanupSubscription } from 'src/composables/useStore.js';
 import LoginPage from 'src/pages/LoginPage.vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 const loaderProgress = ref(8)
 const completingLoader = ref(false)
@@ -77,4 +77,3 @@ onBeforeUnmount(async () => {
     font-size: 18px;
 }
 </style>
-
