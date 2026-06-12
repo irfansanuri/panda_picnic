@@ -31,7 +31,7 @@
                 <div class="footer__recap-item">
                     <span>📍</span>
                     <div>
-                        <strong>Pantai Masjid Tanah</strong>
+                        <strong>Pantai Kuala Sungai Baru</strong>
                         <span>Melaka</span>
                     </div>
                 </div>

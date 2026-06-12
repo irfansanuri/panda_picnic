@@ -23,12 +23,12 @@
 
             <!-- Map button -->
             <div class="details__map" ref="mapRef">
-                <a href="https://maps.google.com/?q=Pantai+Masjid+Tanah+Melaka" target="_blank" rel="noopener"
+                <a href="https://maps.app.goo.gl/9mqnwygmJLeNiYcq8" target="_blank" rel="noopener"
                     class="btn-tropical details__map-btn">
                     🗺️ Buka Google Maps
                 </a>
                 <p class="details__map-note">
-                    Pantai Masjid Tanah · Melaka · Bawa pelumba matahari! ☀️
+                    Pantai Kuala Sungai Baru · Melaka · Bawa pelumba matahari! ☀️
                 </p>
             </div>
         </div>
@@ -49,7 +49,7 @@ const cardRefs = reactive({})
 let detailsMatchMedia = null
 
 const details = [
-    { icon: '📍', label: 'Tempat', value: 'Pantai Masjid Tanah', sub: 'Melaka' },
+    { icon: '📍', label: 'Tempat', value: 'Pantai Kuala Sungai Baru', sub: 'Melaka' },
     { icon: '📅', label: 'Tarikh', value: '13 Jun 2026', sub: 'Sabtu' },
     { icon: '⏰', label: 'Masa', value: '8:00 Pagi', sub: 'Jangan lambat!' },
     { icon: '🌊', label: 'Aktiviti', value: 'Picnic & BBQ', sub: 'Di tepi pantai' },

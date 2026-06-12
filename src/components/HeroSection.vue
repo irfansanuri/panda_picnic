@@ -34,7 +34,7 @@
                     <div class="hero__chip">
                         <span>📍</span>
                         <div>
-                            <strong>Pantai Masjid Tanah</strong>
+                            <strong>Pantai Kuala Sungai Baru</strong>
                             <span>Melaka</span>
                         </div>
                     </div>

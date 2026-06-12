@@ -33,7 +33,7 @@
             <div class="cdown__footer" ref="footerRef">
                 <div class="cdown__footer-inner">
                     <span class="cdown__footer-icon">📅</span>
-                    <span class="cdown__footer-text">Sabtu, 13 Jun 2026 · 8:00 Pagi · Pantai Masjid Tanah</span>
+                    <span class="cdown__footer-text">Sabtu, 13 Jun 2026 · 8:00 Pagi · Pantai Kuala Sungai Baru</span>
                     <span class="cdown__footer-icon">🏖️</span>
                 </div>
             </div>

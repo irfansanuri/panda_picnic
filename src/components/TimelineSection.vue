@@ -31,12 +31,8 @@
             </div>
 
             <div class="timeline__mobile-list" ref="mobileListRef">
-                <div
-                    v-for="(event, i) in events"
-                    :key="`mobile-${i}`"
-                    class="timeline__mobile-item"
-                    :ref="el => (mobileItemRefs[i] = el)"
-                >
+                <div v-for="(event, i) in events" :key="`mobile-${i}`" class="timeline__mobile-item"
+                    :ref="el => (mobileItemRefs[i] = el)">
                     <div class="timeline__mobile-dot">{{ event.icon }}</div>
                     <div class="timeline__mobile-card wood-card">
                         <span class="timeline__mobile-time">{{ event.time }}</span>
@@ -69,7 +65,7 @@ const mobileItemRefs = reactive({})
 let timelineMatchMedia = null
 
 const events = [
-    { time: '7:30 Pagi', icon: '🌅', name: 'Bertolak dari KL' },
+    { time: '7:30 Pagi', icon: '🌅', name: 'Bertolak dari Rumah' },
     { time: '8:00 Pagi', icon: '🚗', name: 'Tiba & Setup' },
     { time: '8:30 Pagi', icon: '🧺', name: 'Bentang Tarpaulin' },
     { time: '9:00 Pagi', icon: '🔥', name: 'Hidupkan BBQ' },

@@ -466,7 +466,7 @@ onBeforeUnmount() {
 
 ```javascript
 const events = [
-  { time: "7:30 Pagi", icon: "🌅", name: "Bertolak dari KL" },
+  { time: "7:30 Pagi", icon: "🌅", name: "Bertolak dari Rumah" },
   { time: "8:00 Pagi", icon: "🚗", name: "Tiba & Setup" },
   // ... 8 more events
 ];
@@ -1520,18 +1520,18 @@ NavBar
 ### Cleanup Audit
 
 | Component           | ScrollTrigger Killed | RAF Cleared | Intervals Cleared | Event Listeners Removed | Firestore Unsubscribed |
-| ------------------- | -------------------- | ----------- | ----------------- | ----------------------- | ----------------------- |
-| HeroSection         | ❌                   | ❌          | N/A               | ❌ (resize listener)    | N/A                     |
-| CountdownSection    | ✅                   | ✅          | ✅                | N/A                     | N/A                     |
-| GamesSection        | ✅                   | N/A         | N/A               | N/A                     | N/A                     |
-| TimelineSection     | ✅                   | N/A         | N/A               | N/A                     | N/A                     |
-| EventDetailsSection | ✅                   | N/A         | N/A               | N/A                     | N/A                     |
-| AttendeesSection    | ❌                   | N/A         | N/A               | N/A                     | N/A                     |
-| BringListSection    | ❌                   | N/A         | N/A               | N/A                     | N/A                     |
-| MoodSection         | ❌                   | N/A         | N/A               | N/A                     | N/A                     |
-| FooterSection       | ❌                   | N/A         | N/A               | N/A                     | N/A                     |
-| NavBar              | ❌                   | N/A         | N/A               | ✅                      | N/A                     |
-| useStore            | N/A                  | N/A         | N/A               | N/A                     | ❌                      |
+| ------------------- | -------------------- | ----------- | ----------------- | ----------------------- | ---------------------- |
+| HeroSection         | ❌                   | ❌          | N/A               | ❌ (resize listener)    | N/A                    |
+| CountdownSection    | ✅                   | ✅          | ✅                | N/A                     | N/A                    |
+| GamesSection        | ✅                   | N/A         | N/A               | N/A                     | N/A                    |
+| TimelineSection     | ✅                   | N/A         | N/A               | N/A                     | N/A                    |
+| EventDetailsSection | ✅                   | N/A         | N/A               | N/A                     | N/A                    |
+| AttendeesSection    | ❌                   | N/A         | N/A               | N/A                     | N/A                    |
+| BringListSection    | ❌                   | N/A         | N/A               | N/A                     | N/A                    |
+| MoodSection         | ❌                   | N/A         | N/A               | N/A                     | N/A                    |
+| FooterSection       | ❌                   | N/A         | N/A               | N/A                     | N/A                    |
+| NavBar              | ❌                   | N/A         | N/A               | ✅                      | N/A                    |
+| useStore            | N/A                  | N/A         | N/A               | N/A                     | ❌                     |
 
 ---
 
@@ -1846,7 +1846,7 @@ Before making ANY changes to GSAP-heavy components:
 | File                                   | Priority    | Issues                                                    |
 | -------------------------------------- | ----------- | --------------------------------------------------------- |
 | src/components/HeroSection.vue         | 🔴 CRITICAL | Memory leak, RAF not cleared, resize listener not removed |
-| src/composables/useStore.js            | 🔴 CRITICAL | Firestore subscription never unsubscribed                |
+| src/composables/useStore.js            | 🔴 CRITICAL | Firestore subscription never unsubscribed                 |
 | src/components/CountdownSection.vue    | 🟠 HIGH     | Good cleanup, but verify ref stability                    |
 | src/components/GamesSection.vue        | 🟠 HIGH     | Icon animation timing fragile                             |
 | src/components/TimelineSection.vue     | 🟡 MEDIUM   | Add tablet breakpoints                                    |
